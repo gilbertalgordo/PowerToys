@@ -88,7 +88,7 @@ private:
 
         SHELLEXECUTEINFOW sei{ sizeof(sei) };
         sei.fMask = { SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI };
-        sei.lpFile = L"modules\\Hosts\\PowerToys.Hosts.exe";
+        sei.lpFile = L"WinUI3Apps\\PowerToys.Hosts.exe";
         sei.nShow = SW_SHOWNORMAL;
         sei.lpParameters = executable_args.data();
 
@@ -132,7 +132,7 @@ public:
         }
 
         m_hShowAdminEvent = CreateDefaultEvent(CommonSharedConstants::SHOW_HOSTS_ADMIN_EVENT);
-        if (!m_hShowEvent)
+        if (!m_hShowAdminEvent)
         {
             Logger::error(L"Failed to create show hosts admin event");
             auto message = get_last_error_message(GetLastError());
