@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information.
 using System;
 using System.Threading;
+
 using global::Windows.System;
-using interop;
+using ManagedCommon;
 using Microsoft.PowerToys.Settings.UI.Controls;
 using Microsoft.PowerToys.Settings.UI.Library;
 using Microsoft.PowerToys.Settings.UI.Library.Telemetry.Events;
@@ -13,6 +14,7 @@ using Microsoft.PowerToys.Telemetry;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
+using PowerToys.Interop;
 using WinUIEx;
 
 namespace Microsoft.PowerToys.Settings.UI.Flyout
@@ -33,16 +35,35 @@ namespace Microsoft.PowerToys.Settings.UI.Flyout
         {
             FlyoutMenuButton selectedModuleBtn = sender as FlyoutMenuButton;
             bool moduleRun = true;
-            switch ((string)selectedModuleBtn.Tag)
+
+            // Closing manually the flyout to workaround focus gain problems
+            App.GetFlyoutWindow()?.Hide();
+
+            switch ((ModuleType)selectedModuleBtn.Tag)
             {
-                case "ColorPicker": // Launch ColorPicker
+                case ModuleType.ColorPicker: // Launch ColorPicker
                     using (var eventHandle = new EventWaitHandle(false, EventResetMode.AutoReset, Constants.ShowColorPickerSharedEvent()))
                     {
                         eventHandle.Set();
                     }
 
                     break;
-                case "FancyZones": // Launch FancyZones Editor
+                case ModuleType.EnvironmentVariables: // Launch Environment Variables
+                    {
+                        bool launchAdmin = SettingsRepository<EnvironmentVariablesSettings>.GetInstance(new SettingsUtils()).SettingsConfig.Properties.LaunchAdministrator;
+                        string eventName = !App.IsElevated && launchAdmin
+                            ? Constants.ShowEnvironmentVariablesAdminSharedEvent()
+                            : Constants.ShowEnvironmentVariablesSharedEvent();
+
+                        using (var eventHandle = new EventWaitHandle(false, EventResetMode.AutoReset, eventName))
+                        {
+                            eventHandle.Set();
+                        }
+                    }
+
+                    break;
+
+                case ModuleType.FancyZones: // Launch FancyZones Editor
                     using (var eventHandle = new EventWaitHandle(false, EventResetMode.AutoReset, Constants.FZEToggleEvent()))
                     {
                         eventHandle.Set();
@@ -50,7 +71,7 @@ namespace Microsoft.PowerToys.Settings.UI.Flyout
 
                     break;
 
-                case "Hosts": // Launch Hosts
+                case ModuleType.Hosts: // Launch Hosts
                     {
                         bool launchAdmin = SettingsRepository<HostsSettings>.GetInstance(new SettingsUtils()).SettingsConfig.Properties.LaunchAdministrator;
                         string eventName = !App.IsElevated && launchAdmin
@@ -65,14 +86,14 @@ namespace Microsoft.PowerToys.Settings.UI.Flyout
 
                     break;
 
-                case "RegistryPreview": // Launch Registry Preview
+                case ModuleType.RegistryPreview: // Launch Registry Preview
                     using (var eventHandle = new EventWaitHandle(false, EventResetMode.AutoReset, Constants.RegistryPreviewTriggerEvent()))
                     {
                         eventHandle.Set();
                     }
 
                     break;
-                case "MeasureTool": // Launch Screen Ruler
+                case ModuleType.MeasureTool: // Launch Screen Ruler
                     using (var eventHandle = new EventWaitHandle(false, EventResetMode.AutoReset, Constants.MeasureToolTriggerEvent()))
                     {
                         eventHandle.Set();
@@ -80,7 +101,7 @@ namespace Microsoft.PowerToys.Settings.UI.Flyout
 
                     break;
 
-                case "PowerLauncher": // Launch Run
+                case ModuleType.PowerLauncher: // Launch Run
                     using (var eventHandle = new EventWaitHandle(false, EventResetMode.AutoReset, Constants.PowerLauncherSharedEvent()))
                     {
                         eventHandle.Set();
@@ -88,7 +109,7 @@ namespace Microsoft.PowerToys.Settings.UI.Flyout
 
                     break;
 
-                case "PowerOCR": // Launch Text Extractor
+                case ModuleType.PowerOCR: // Launch Text Extractor
                     using (var eventHandle = new EventWaitHandle(false, EventResetMode.AutoReset, Constants.ShowPowerOCRSharedEvent()))
                     {
                         eventHandle.Set();
@@ -96,7 +117,15 @@ namespace Microsoft.PowerToys.Settings.UI.Flyout
 
                     break;
 
-                case "ShortcutGuide": // Launch Shortcut Guide
+                case ModuleType.Workspaces: // Launch Workspaces Editor
+                    using (var eventHandle = new EventWaitHandle(false, EventResetMode.AutoReset, Constants.WorkspacesLaunchEditorEvent()))
+                    {
+                        eventHandle.Set();
+                    }
+
+                    break;
+
+                case ModuleType.ShortcutGuide: // Launch Shortcut Guide
                     using (var eventHandle = new EventWaitHandle(false, EventResetMode.AutoReset, Constants.ShortcutGuideTriggerEvent()))
                     {
                         eventHandle.Set();
@@ -111,7 +140,7 @@ namespace Microsoft.PowerToys.Settings.UI.Flyout
 
             if (moduleRun)
             {
-                PowerToysTelemetry.Log.WriteEvent(new TrayFlyoutModuleRunEvent() { ModuleName = (string)selectedModuleBtn.Tag });
+                PowerToysTelemetry.Log.WriteEvent(new TrayFlyoutModuleRunEvent() { ModuleName = ((ModuleType)selectedModuleBtn.Tag).ToString() });
             }
         }
 

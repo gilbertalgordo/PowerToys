@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+
 using Microsoft.Win32;
 using Wox.Plugin;
 using Wox.Plugin.Logger;
@@ -127,7 +128,7 @@ namespace Wox.Infrastructure.Exception
                     foreach (string versionKeyName in ndpKey.GetSubKeyNames())
                     {
                         // Using InvariantCulture since this is internal and involves version key
-                        if (versionKeyName.StartsWith("v", StringComparison.InvariantCulture))
+                        if (versionKeyName.StartsWith('v'))
                         {
                             RegistryKey versionKey = ndpKey.OpenSubKey(versionKeyName);
                             string name = (string)versionKey.GetValue("Version", string.Empty);

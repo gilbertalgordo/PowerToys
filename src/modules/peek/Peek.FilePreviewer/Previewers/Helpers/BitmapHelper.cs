@@ -8,6 +8,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.UI.Xaml.Media.Imaging;
 using Peek.Common;
 
@@ -18,7 +19,6 @@ namespace Peek.FilePreviewer.Previewers.Helpers
         public static async Task<BitmapSource> GetBitmapFromHBitmapAsync(IntPtr hbitmap, bool isSupportingTransparency, CancellationToken cancellationToken)
         {
             Bitmap? bitmap = null;
-            Bitmap? tempBitmapForDeletion = null;
 
             try
             {
@@ -26,15 +26,29 @@ namespace Peek.FilePreviewer.Previewers.Helpers
 
                 cancellationToken.ThrowIfCancellationRequested();
 
+                return await BitmapToImageSource(bitmap, isSupportingTransparency, cancellationToken);
+            }
+            finally
+            {
+                bitmap?.Dispose();
+
+                // delete HBitmap to avoid memory leaks
+                NativeMethods.DeleteObject(hbitmap);
+            }
+        }
+
+        public static async Task<BitmapSource> BitmapToImageSource(Bitmap bitmap, bool isSupportingTransparency, CancellationToken cancellationToken)
+        {
+            Bitmap? transparentBitmap = null;
+
+            try
+            {
                 if (isSupportingTransparency && bitmap.PixelFormat == PixelFormat.Format32bppRgb)
                 {
                     var bitmapRectangle = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
                     var bitmapData = bitmap.LockBits(bitmapRectangle, ImageLockMode.ReadOnly, bitmap.PixelFormat);
 
-                    var transparentBitmap = new Bitmap(bitmapData.Width, bitmapData.Height, bitmapData.Stride, PixelFormat.Format32bppArgb, bitmapData.Scan0);
-
-                    // Can't dispose of original bitmap yet as that causes crashes on png files. Saving it for later disposal after saving to stream.
-                    tempBitmapForDeletion = bitmap;
+                    transparentBitmap = new Bitmap(bitmapData.Width, bitmapData.Height, bitmapData.Stride, PixelFormat.Format32bppArgb, bitmapData.Scan0);
                     bitmap = transparentBitmap;
                 }
 
@@ -54,11 +68,7 @@ namespace Peek.FilePreviewer.Previewers.Helpers
             }
             finally
             {
-                bitmap?.Dispose();
-                tempBitmapForDeletion?.Dispose();
-
-                // delete HBitmap to avoid memory leaks
-                NativeMethods.DeleteObject(hbitmap);
+                transparentBitmap?.Dispose();
             }
         }
 

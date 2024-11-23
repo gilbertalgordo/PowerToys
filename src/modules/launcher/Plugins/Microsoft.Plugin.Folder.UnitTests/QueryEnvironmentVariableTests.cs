@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
+
 using Microsoft.Plugin.Folder.Sources;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -14,7 +15,7 @@ namespace Microsoft.Plugin.Folder.UnitTests
     [TestClass]
     public class QueryEnvironmentVariableTests
     {
-        private static IQueryEnvironmentVariable _queryEnvironmentVariable;
+        private static QueryEnvironmentVariable _queryEnvironmentVariable;
         private static MockFileSystem _fileSystem;
 
         [TestInitialize]

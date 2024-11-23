@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Controls;
+
 using ManagedCommon;
 using Microsoft.Plugin.WindowWalker.Components;
 using Microsoft.PowerToys.Settings.UI.Library;
@@ -29,14 +30,13 @@ namespace Microsoft.Plugin.WindowWalker
 
         public string Description => Properties.Resources.wox_plugin_windowwalker_plugin_description;
 
+        public static string PluginID => "F737A9223560B3C6833B5FFB8CDF78E5";
+
         internal static readonly VirtualDesktopHelper VirtualDesktopHelperInstance = new VirtualDesktopHelper();
 
         public List<Result> Query(Query query)
         {
-            if (query == null)
-            {
-                throw new ArgumentNullException(nameof(query));
-            }
+            ArgumentNullException.ThrowIfNull(query);
 
             _cancellationTokenSource?.Cancel();
             _cancellationTokenSource?.Dispose();

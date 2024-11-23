@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.IO.Abstractions;
 using System.Threading;
+
 using ManagedCommon;
 using Microsoft.PowerToys.Settings.UI.Library;
 using Microsoft.PowerToys.Settings.UI.Library.Utilities;
@@ -17,9 +18,9 @@ namespace Peek.UI
         private const string PeekModuleName = "Peek";
         private const int MaxNumberOfRetry = 5;
 
-        private readonly ISettingsUtils _settingsUtils;
+        private readonly SettingsUtils _settingsUtils;
         private readonly IFileSystemWatcher _watcher;
-        private readonly object _loadingSettingsLock = new object();
+        private readonly Lock _loadingSettingsLock = new();
 
         public bool CloseAfterLosingFocus { get; private set; }
 
@@ -48,7 +49,7 @@ namespace Peek.UI
 
                         if (!_settingsUtils.SettingsExists(PeekModuleName))
                         {
-                            Logger.LogInfo("Hosts settings.json was missing, creating a new one");
+                            Logger.LogInfo("Peek settings.json was missing, creating a new one");
                             var defaultSettings = new PeekSettings();
                             defaultSettings.Save(_settingsUtils);
                         }

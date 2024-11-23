@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Linq;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Wox.Infrastructure;
@@ -36,6 +37,7 @@ namespace Microsoft.PowerToys.Run.Plugin.TimeDate.UnitTests
         [DataRow("now", "Now -", "Images\\timeDate.dark.png")]
         [DataRow("now u", "Now UTC -", "Images\\timeDate.dark.png")]
         [DataRow("unix", "Unix epoch time -", "Images\\timeDate.dark.png")]
+        [DataRow("unix epoch time in", "Unix epoch time in milliseconds -", "Images\\timeDate.dark.png")]
         [DataRow("hour", "Hour -", "Images\\time.dark.png")]
         [DataRow("minute", "Minute -", "Images\\time.dark.png")]
         [DataRow("second", "Second -", "Images\\time.dark.png")]
@@ -82,6 +84,7 @@ namespace Microsoft.PowerToys.Run.Plugin.TimeDate.UnitTests
         [DataRow("now", "Now -", "Images\\timeDate.light.png")]
         [DataRow("now u", "Now UTC -", "Images\\timeDate.light.png")]
         [DataRow("unix", "Unix epoch time -", "Images\\timeDate.light.png")]
+        [DataRow("unix epoch time in", "Unix epoch time in milliseconds -", "Images\\timeDate.light.png")]
         [DataRow("hour", "Hour -", "Images\\time.light.png")]
         [DataRow("minute", "Minute -", "Images\\time.light.png")]
         [DataRow("second", "Second -", "Images\\time.light.png")]

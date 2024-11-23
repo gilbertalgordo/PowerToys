@@ -5,8 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using System.Windows.Controls;
 using System.Windows.Input;
+
 using ManagedCommon;
 using Microsoft.PowerToys.Run.Plugin.TimeDate.Components;
 using Microsoft.PowerToys.Run.Plugin.TimeDate.Properties;
@@ -24,6 +26,10 @@ namespace Microsoft.PowerToys.Run.Plugin.TimeDate
         public string Name => Resources.Microsoft_plugin_timedate_plugin_name;
 
         public string Description => GetTranslatedPluginDescription();
+
+        public static string PluginID => "5D69806A5A474115821C3E4C56B9C793";
+
+        private static readonly CompositeFormat MicrosoftPluginTimedatePluginDescription = System.Text.CompositeFormat.Parse(Properties.Resources.Microsoft_plugin_timedate_plugin_description);
 
         public IEnumerable<PluginAdditionalOption> AdditionalOptions
         {
@@ -46,7 +52,7 @@ namespace Microsoft.PowerToys.Run.Plugin.TimeDate
                 {
                     AcceleratorKey = Key.C,
                     AcceleratorModifiers = ModifierKeys.Control,
-                    FontFamily = "Segoe MDL2 Assets",
+                    FontFamily = "Segoe Fluent Icons,Segoe MDL2 Assets",
                     Glyph = "\xE8C8",                       // E8C8 => Symbol: Copy
                     Title = Resources.Microsoft_plugin_timedate_CopyToClipboard,
                     Action = _ => ResultHelper.CopyToClipBoard(data.Value),
@@ -63,10 +69,7 @@ namespace Microsoft.PowerToys.Run.Plugin.TimeDate
 
         public List<Result> Query(Query query)
         {
-            if (query == null)
-            {
-                throw new ArgumentNullException(paramName: nameof(query));
-            }
+            ArgumentNullException.ThrowIfNull(query);
 
             return SearchController.ExecuteSearch(query, IconTheme);
         }
@@ -94,7 +97,7 @@ namespace Microsoft.PowerToys.Run.Plugin.TimeDate
             string timeExample = Resources.Microsoft_plugin_timedate_plugin_description_example_time + "::" + DateTime.Now.ToString("T", CultureInfo.CurrentCulture);
             string dayExample = Resources.Microsoft_plugin_timedate_plugin_description_example_day + "::" + DateTime.Now.ToString("d", CultureInfo.CurrentCulture);
             string calendarWeekExample = Resources.Microsoft_plugin_timedate_plugin_description_example_calendarWeek + "::" + DateTime.Now.ToString("d", CultureInfo.CurrentCulture);
-            return string.Format(CultureInfo.CurrentCulture, Resources.Microsoft_plugin_timedate_plugin_description, Resources.Microsoft_plugin_timedate_plugin_description_example_day, dayExample, timeExample, calendarWeekExample);
+            return string.Format(CultureInfo.CurrentCulture, MicrosoftPluginTimedatePluginDescription, Resources.Microsoft_plugin_timedate_plugin_description_example_day, dayExample, timeExample, calendarWeekExample);
         }
 
         public string GetTranslatedPluginTitle()

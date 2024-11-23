@@ -9,6 +9,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
 using Wox.Plugin.Logger;
 
 namespace Wox.Infrastructure
@@ -20,6 +21,15 @@ namespace Wox.Infrastructure
         private static readonly IFile File = FileSystem.File;
         private static readonly IFileInfoFactory FileInfo = FileSystem.FileInfo;
         private static readonly IDirectory Directory = FileSystem.Directory;
+
+        private static readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Converters =
+            {
+                new JsonStringEnumConverter(),
+            },
+        };
 
         /// <summary>
         /// http://www.yinwang.org/blog-cn/2015/11/21/programming-philosophy
@@ -61,8 +71,8 @@ namespace Wox.Infrastructure
                 }
                 else
                 {
-                    var time1 = FileInfo.FromFileName(bundledDataPath).LastWriteTimeUtc;
-                    var time2 = FileInfo.FromFileName(dataPath).LastWriteTimeUtc;
+                    var time1 = FileInfo.New(bundledDataPath).LastWriteTimeUtc;
+                    var time2 = FileInfo.New(dataPath).LastWriteTimeUtc;
                     if (time1 != time2)
                     {
                         File.Copy(bundledDataPath, dataPath, true);
@@ -81,14 +91,7 @@ namespace Wox.Infrastructure
 
         public static string Formatted<T>(this T t)
         {
-            var formatted = JsonSerializer.Serialize(t, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Converters =
-                {
-                    new JsonStringEnumConverter(),
-                },
-            });
+            var formatted = JsonSerializer.Serialize(t, _serializerOptions);
 
             return formatted;
         }

@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
+
 using global::PowerToys.GPOWrapper;
 using Microsoft.PowerToys.Settings.UI.Library;
 using Microsoft.PowerToys.Settings.UI.Library.Helpers;
@@ -44,10 +46,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
         {
             PickFileDialog = pickFileDialog;
 
-            if (settingsRepository == null)
-            {
-                throw new ArgumentNullException(nameof(settingsRepository));
-            }
+            ArgumentNullException.ThrowIfNull(settingsRepository);
 
             GeneralSettingsConfig = settingsRepository.SettingsConfig;
 
@@ -57,15 +56,12 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
 
             _settingsConfigFileFolder = configFileSubfolder;
 
-            if (videoConferenceSettingsRepository == null)
-            {
-                throw new ArgumentNullException(nameof(videoConferenceSettingsRepository));
-            }
+            ArgumentNullException.ThrowIfNull(videoConferenceSettingsRepository);
 
             Settings = videoConferenceSettingsRepository.SettingsConfig;
 
-            CameraNames = interop.CommonManaged.GetAllVideoCaptureDeviceNames();
-            MicrophoneNames = interop.CommonManaged.GetAllActiveMicrophoneDeviceNames();
+            CameraNames = global::PowerToys.Interop.CommonManaged.GetAllVideoCaptureDeviceNames().ToList();
+            MicrophoneNames = global::PowerToys.Interop.CommonManaged.GetAllActiveMicrophoneDeviceNames().ToList();
             MicrophoneNames.Insert(0, "[All]");
 
             var shouldSaveSettings = false;
@@ -147,6 +143,22 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
                 case "When both camera and microphone are muted":
                     _toolbarHideIndex = 2;
                     break;
+                case "After timeout":
+                    _toolbarHideIndex = 3;
+                    break;
+            }
+
+            switch (Settings.Properties.StartupAction.Value)
+            {
+                case "Nothing":
+                    _startupActionIndex = 0;
+                    break;
+                case "Unmute":
+                    _startupActionIndex = 1;
+                    break;
+                case "Mute":
+                    _startupActionIndex = 2;
+                    break;
             }
 
             if (shouldSaveSettings)
@@ -176,6 +188,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
         private int _toolbarPositionIndex;
         private int _toolbarMonitorIndex;
         private int _toolbarHideIndex;
+        private int _startupActionIndex;
         private HotkeySettings _cameraAndMicrophoneMuteHotkey;
         private HotkeySettings _microphoneMuteHotkey;
         private HotkeySettings _microphonePushToTalkHotkey;
@@ -497,9 +510,42 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
                         case 2:
                             Settings.Properties.ToolbarHide.Value = "When both camera and microphone are muted";
                             break;
+                        case 3:
+                            Settings.Properties.ToolbarHide.Value = "After timeout";
+                            break;
                     }
 
                     RaisePropertyChanged(nameof(ToolbarHideIndex));
+                }
+            }
+        }
+
+        public int StartupActionIndex
+        {
+            get
+            {
+                return _startupActionIndex;
+            }
+
+            set
+            {
+                if (value != _startupActionIndex)
+                {
+                    _startupActionIndex = value;
+                    switch (_startupActionIndex)
+                    {
+                        case 0:
+                            Settings.Properties.StartupAction.Value = "Nothing";
+                            break;
+                        case 1:
+                            Settings.Properties.StartupAction.Value = "Unmute";
+                            break;
+                        case 2:
+                            Settings.Properties.StartupAction.Value = "Mute";
+                            break;
+                    }
+
+                    RaisePropertyChanged(nameof(_startupActionIndex));
                 }
             }
         }

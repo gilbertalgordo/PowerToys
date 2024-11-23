@@ -8,6 +8,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
+
 using Wox.Infrastructure;
 using Wox.Plugin;
 using Wox.Plugin.Logger;
@@ -40,7 +41,7 @@ namespace Microsoft.Plugin.Folder
                     PluginName = Assembly.GetExecutingAssembly().GetName().Name,
                     Title = Properties.Resources.Microsoft_plugin_folder_copy_path,
                     Glyph = "\xE8C8",
-                    FontFamily = "Segoe MDL2 Assets",
+                    FontFamily = "Segoe Fluent Icons,Segoe MDL2 Assets",
                     AcceleratorKey = Key.C,
                     AcceleratorModifiers = ModifierKeys.Control,
                     Action = (context) =>
@@ -65,7 +66,7 @@ namespace Microsoft.Plugin.Folder
                     PluginName = Assembly.GetExecutingAssembly().GetName().Name,
                     Title = Properties.Resources.Microsoft_plugin_folder_open_in_console,
                     Glyph = "\xE756",
-                    FontFamily = "Segoe MDL2 Assets",
+                    FontFamily = "Segoe Fluent Icons,Segoe MDL2 Assets",
                     AcceleratorKey = Key.C,
                     AcceleratorModifiers = ModifierKeys.Control | ModifierKeys.Shift,
 
@@ -104,7 +105,7 @@ namespace Microsoft.Plugin.Folder
                 PluginName = Assembly.GetExecutingAssembly().GetName().Name,
                 Title = Properties.Resources.Microsoft_plugin_folder_open_containing_folder,
                 Glyph = "\xE838",
-                FontFamily = "Segoe MDL2 Assets",
+                FontFamily = "Segoe Fluent Icons,Segoe MDL2 Assets",
                 AcceleratorKey = Key.E,
                 AcceleratorModifiers = ModifierKeys.Control | ModifierKeys.Shift,
                 Action = _ =>

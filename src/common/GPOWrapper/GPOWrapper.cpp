@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "GPOWrapper.h"
 #include "GPOWrapper.g.cpp"
 
@@ -11,6 +11,10 @@ namespace winrt::PowerToys::GPOWrapper::implementation
     GpoRuleConfigured GPOWrapper::GetConfiguredAwakeEnabledValue()
     {
         return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredAwakeEnabledValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredCmdNotFoundEnabledValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredCmdNotFoundEnabledValue());
     }
     GpoRuleConfigured GPOWrapper::GetConfiguredColorPickerEnabledValue()
     {
@@ -120,9 +124,9 @@ namespace winrt::PowerToys::GPOWrapper::implementation
     {
         return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredTextExtractorEnabledValue());
     }
-    GpoRuleConfigured GPOWrapper::GetConfiguredPastePlainEnabledValue()
+    GpoRuleConfigured GPOWrapper::GetConfiguredAdvancedPasteEnabledValue()
     {
-        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredPastePlainEnabledValue());
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredAdvancedPasteEnabledValue());
     }
     GpoRuleConfigured GPOWrapper::GetConfiguredVideoConferenceMuteEnabledValue()
     {
@@ -136,12 +140,92 @@ namespace winrt::PowerToys::GPOWrapper::implementation
     {
         return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredPeekEnabledValue());
     }
+    GpoRuleConfigured GPOWrapper::GetDisableNewUpdateToastValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getDisableNewUpdateToastValue());
+    }
     GpoRuleConfigured GPOWrapper::GetDisableAutomaticUpdateDownloadValue()
     {
         return static_cast<GpoRuleConfigured>(powertoys_gpo::getDisableAutomaticUpdateDownloadValue());
     }
+    GpoRuleConfigured GPOWrapper::GetDisableShowWhatsNewAfterUpdatesValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getDisableShowWhatsNewAfterUpdatesValue());
+    }
     GpoRuleConfigured GPOWrapper::GetAllowExperimentationValue()
     {
         return static_cast<GpoRuleConfigured>(powertoys_gpo::getAllowExperimentationValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetRunPluginEnabledValue(winrt::hstring const& pluginID)
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getRunPluginEnabledValue(winrt::to_string(pluginID)));
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredEnvironmentVariablesEnabledValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredEnvironmentVariablesEnabledValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredQoiPreviewEnabledValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredQoiPreviewEnabledValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredQoiThumbnailsEnabledValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredQoiThumbnailsEnabledValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetAllowedAdvancedPasteOnlineAIModelsValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getAllowedAdvancedPasteOnlineAIModelsValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredNewPlusEnabledValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredNewPlusEnabledValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredWorkspacesEnabledValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredWorkspacesEnabledValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredMwbClipboardSharingEnabledValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredMwbClipboardSharingEnabledValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredMwbFileTransferEnabledValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredMwbFileTransferEnabledValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredMwbUseOriginalUserInterfaceValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredMwbUseOriginalUserInterfaceValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredMwbDisallowBlockingScreensaverValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredMwbDisallowBlockingScreensaverValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredMwbSameSubnetOnlyValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredMwbSameSubnetOnlyValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredMwbValidateRemoteIpValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredMwbValidateRemoteIpValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredMwbDisableUserDefinedIpMappingRulesValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredMwbDisableUserDefinedIpMappingRulesValue());
+    }
+    winrt::hstring GPOWrapper::GetConfiguredMwbPolicyDefinedIpMappingRules()
+    {
+        // Assuming powertoys_gpo::getConfiguredMwbPolicyDefinedIpMappingRules() returns a std::wstring
+        std::wstring rules = powertoys_gpo::getConfiguredMwbPolicyDefinedIpMappingRules();
+
+        // Convert std::wstring to winrt::hstring
+        return to_hstring(rules.c_str());
+    }
+    GpoRuleConfigured GPOWrapper::GetConfiguredNewPlusHideTemplateFilenameExtensionValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getConfiguredNewPlusHideTemplateFilenameExtensionValue());
+    }
+    GpoRuleConfigured GPOWrapper::GetAllowDataDiagnosticsValue()
+    {
+        return static_cast<GpoRuleConfigured>(powertoys_gpo::getAllowDataDiagnosticsValue());
     }
 }

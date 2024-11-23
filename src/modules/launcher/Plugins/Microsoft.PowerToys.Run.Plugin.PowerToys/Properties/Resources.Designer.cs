@@ -106,6 +106,15 @@ namespace Microsoft.PowerToys.Run.Plugin.PowerToys.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Environment Variables.
+        /// </summary>
+        internal static string Environment_Variables {
+            get {
+                return ResourceManager.GetString("Environment_Variables", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to FancyZones Editor.
         /// </summary>
         internal static string FancyZones_Editor {
@@ -124,7 +133,7 @@ namespace Microsoft.PowerToys.Run.Plugin.PowerToys.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Open PowerToys utilities and settings..
+        ///   Looks up a localized string similar to Opens PowerToys utilities and settings.
         /// </summary>
         internal static string Plugin_Description {
             get {
@@ -183,6 +192,15 @@ namespace Microsoft.PowerToys.Run.Plugin.PowerToys.Properties {
         internal static string Text_Extractor {
             get {
                 return ResourceManager.GetString("Text_Extractor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Workspaces Editor.
+        /// </summary>
+        internal static string Workspaces_Editor {
+            get {
+                return ResourceManager.GetString("Workspaces_Editor", resourceCulture);
             }
         }
     }

@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.InteropServices;
+using System.Globalization;
 using System.Threading.Tasks;
-using Peek.Common.Extensions;
-using Peek.Common.Helpers;
+
+using ManagedCommon;
 using Windows.Storage;
 
 #nullable enable
@@ -25,7 +25,11 @@ namespace Peek.Common.Models
 
         public string Name { get; init; }
 
+        public string ParsingName => string.Empty;
+
         public string Path { get; init; }
+
+        public string Extension => System.IO.Path.GetExtension(Path).ToLower(CultureInfo.InvariantCulture);
 
         public async Task<IStorageItem?> GetStorageItemAsync()
         {

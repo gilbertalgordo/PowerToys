@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
+
 using Microsoft.Plugin.Folder.Sources.Result;
 
 namespace Microsoft.Plugin.Folder.Sources
@@ -24,10 +25,7 @@ namespace Microsoft.Plugin.Folder.Sources
 
         public IEnumerable<IItemResult> Query(string querySearch)
         {
-            if (querySearch == null)
-            {
-                throw new ArgumentNullException(nameof(querySearch));
-            }
+            ArgumentNullException.ThrowIfNull(querySearch);
 
             return GetEnvironmentVariables(querySearch)
                 .OrderBy(v => v.Title)

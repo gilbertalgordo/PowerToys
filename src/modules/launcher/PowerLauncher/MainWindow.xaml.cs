@@ -13,17 +13,20 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
+
 using Common.UI;
-using interop;
 using Microsoft.PowerLauncher.Telemetry;
 using Microsoft.PowerToys.Telemetry;
 using PowerLauncher.Helper;
 using PowerLauncher.Plugin;
 using PowerLauncher.Telemetry.Events;
 using PowerLauncher.ViewModel;
+using PowerToys.Interop;
 using Wox.Infrastructure.UserSettings;
 using Wox.Plugin;
 using Wox.Plugin.Interfaces;
+using Wpf.Ui.Appearance;
+
 using CancellationToken = System.Threading.CancellationToken;
 using Image = Wox.Infrastructure.Image;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -55,7 +58,21 @@ namespace PowerLauncher
             _nativeWaiterCancelToken = nativeWaiterCancelToken;
             _settings = settings;
 
+            // Fixes #30850
+            AppContext.SetSwitch("Switch.System.Windows.Controls.Grid.StarDefinitionsCanExceedAvailableSpace", true);
+
             InitializeComponent();
+
+            if (OSVersionHelper.IsWindows11())
+            {
+                WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.Acrylic;
+            }
+            else
+            {
+                WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.None;
+            }
+
+            SystemThemeWatcher.Watch(this, WindowBackdropType);
 
             _firstDeleteTimer.Elapsed += CheckForFirstDelete;
             _firstDeleteTimer.Interval = 1000;
@@ -202,6 +219,8 @@ namespace PowerLauncher
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             _viewModel.MainWindowVisibility = Visibility.Collapsed;
             _viewModel.LoadedAtLeastOnce = true;
+            _viewModel.SetPluginsOverviewVisibility();
+            _viewModel.SetFontSize();
 
             BringProcessToForeground();
         }
@@ -344,6 +363,15 @@ namespace PowerLauncher
                     UpdatePosition();
                     BringProcessToForeground();
 
+                    _viewModel.SetPluginsOverviewVisibility();
+                    _viewModel.SetFontSize();
+
+                    if (_viewModel.Plugins.Count > 0)
+                    {
+                        _viewModel.SelectedPlugin = null;
+                        pluginsHintsList.ScrollIntoView(pluginsHintsList.Items[0]);
+                    }
+
                     // HACK: Setting focus here again fixes some focus issues, like on first run or after showing a message box.
                     SearchBox.QueryTextBox.Focus();
                     Keyboard.Focus(SearchBox.QueryTextBox);
@@ -385,8 +413,8 @@ namespace PowerLauncher
 
         private void InitializePosition()
         {
-            Top = WindowTop();
-            Left = WindowLeft();
+            MoveToDesiredPosition();
+
             _settings.WindowTop = Top;
             _settings.WindowLeft = Left;
         }
@@ -395,7 +423,6 @@ namespace PowerLauncher
         {
             if (_settings.HideWhenDeactivated)
             {
-                // (this.FindResource("OutroStoryboard") as Storyboard).Begin();
                 _viewModel.Hide();
             }
         }
@@ -409,9 +436,37 @@ namespace PowerLauncher
             }
             else
             {
-                Top = WindowTop();
-                Left = WindowLeft();
+                MoveToDesiredPosition();
             }
+        }
+
+        private void MoveToDesiredPosition()
+        {
+            // Hack: After switching to PerMonitorV2, this operation seems to require a three-step operation
+            // to ensure a stable position: First move to top-left of desired screen, then centralize twice.
+            // More straightforward ways of doing this don't seem to work well for unclear reasons, but possibly related to
+            // https://github.com/dotnet/wpf/issues/4127
+            // In any case, there does not seem to be any big practical downside to doing it this way. As a bonus, it can be
+            // done in pure WPF without any native calls and without too much DPI-based fiddling.
+            // In terms of the hack itself, removing any of these three steps seems to fail in certain scenarios only,
+            // so be careful with testing!
+            var desiredScreen = GetScreen();
+            var workingArea = desiredScreen.WorkingArea;
+            Point ToDIP(double unitX, double unitY) => WindowsInteropHelper.TransformPixelsToDIP(this, unitX, unitY);
+
+            // Move to top-left of desired screen.
+            Top = workingArea.Top;
+            Left = workingArea.Left;
+
+            // Centralize twice.
+            void MoveToScreenTopCenter()
+            {
+                Left = ((ToDIP(workingArea.Width, 0).X - ActualWidth) / 2) + ToDIP(workingArea.X, 0).X;
+                Top = ((ToDIP(0, workingArea.Height).Y - SearchBox.ActualHeight) / 4) + ToDIP(0, workingArea.Y).Y;
+            }
+
+            MoveToScreenTopCenter();
+            MoveToScreenTopCenter();
         }
 
         private void OnLocationChanged(object sender, EventArgs e)
@@ -421,28 +476,6 @@ namespace PowerLauncher
                 _settings.WindowLeft = Left;
                 _settings.WindowTop = Top;
             }
-        }
-
-        /// <summary>
-        /// Calculates X co-ordinate of main window top left corner.
-        /// </summary>
-        /// <returns>X co-ordinate of main window top left corner</returns>
-        private double WindowLeft()
-        {
-            var screen = GetScreen();
-            var dip1 = WindowsInteropHelper.TransformPixelsToDIP(this, screen.WorkingArea.X, 0);
-            var dip2 = WindowsInteropHelper.TransformPixelsToDIP(this, screen.WorkingArea.Width, 0);
-            var left = ((dip2.X - ActualWidth) / 2) + dip1.X;
-            return left;
-        }
-
-        private double WindowTop()
-        {
-            var screen = GetScreen();
-            var dip1 = WindowsInteropHelper.TransformPixelsToDIP(this, 0, screen.WorkingArea.Y);
-            var dip2 = WindowsInteropHelper.TransformPixelsToDIP(this, 0, screen.WorkingArea.Height);
-            var top = ((dip2.Y - SearchBox.ActualHeight) / 4) + dip1.Y;
-            return top;
         }
 
         private Screen GetScreen()
@@ -464,66 +497,101 @@ namespace PowerLauncher
 
         private void Launcher_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Tab && (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
+            if (_viewModel.PluginsOverviewVisibility == Visibility.Visible)
             {
-                _viewModel.SelectPrevTabItemCommand.Execute(null);
-                UpdateTextBoxToSelectedItem();
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Tab)
-            {
-                _viewModel.SelectNextTabItemCommand.Execute(null);
-                UpdateTextBoxToSelectedItem();
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Down)
-            {
-                _viewModel.SelectNextItemCommand.Execute(null);
-                UpdateTextBoxToSelectedItem();
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Up)
-            {
-                _viewModel.SelectPrevItemCommand.Execute(null);
-                UpdateTextBoxToSelectedItem();
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Right)
-            {
-                if (SearchBox.QueryTextBox.CaretIndex == SearchBox.QueryTextBox.Text.Length)
+                if (e.Key == Key.Up)
                 {
-                    _viewModel.SelectNextContextMenuItemCommand.Execute(null);
+                    _viewModel.SelectPrevOverviewPluginCommand.Execute(null);
+                    pluginsHintsList.ScrollIntoView(_viewModel.SelectedPlugin);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Down)
+                {
+                    _viewModel.SelectNextOverviewPluginCommand.Execute(null);
+                    pluginsHintsList.ScrollIntoView(_viewModel.SelectedPlugin);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Tab && (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
+                {
+                    _viewModel.SelectPrevOverviewPluginCommand.Execute(null);
+                    pluginsHintsList.ScrollIntoView(_viewModel.SelectedPlugin);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Tab)
+                {
+                    _viewModel.SelectNextOverviewPluginCommand.Execute(null);
+                    pluginsHintsList.ScrollIntoView(_viewModel.SelectedPlugin);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Enter)
+                {
+                    QueryForSelectedPlugin();
                     e.Handled = true;
                 }
             }
-            else if (e.Key == Key.Left)
+            else
             {
-                if (SearchBox.QueryTextBox.CaretIndex == SearchBox.QueryTextBox.Text.Length)
+                if (e.Key == Key.Tab && (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
                 {
-                    if (_viewModel.Results != null && _viewModel.Results.IsContextMenuItemSelected())
+                    _viewModel.SelectPrevTabItemCommand.Execute(null);
+                    UpdateTextBoxToSelectedItem();
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Tab)
+                {
+                    _viewModel.SelectNextTabItemCommand.Execute(null);
+                    UpdateTextBoxToSelectedItem();
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Down)
+                {
+                    _viewModel.SelectNextItemCommand.Execute(null);
+                    UpdateTextBoxToSelectedItem();
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Up)
+                {
+                    _viewModel.SelectPrevItemCommand.Execute(null);
+                    UpdateTextBoxToSelectedItem();
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Right)
+                {
+                    if (SearchBox.QueryTextBox.CaretIndex == SearchBox.QueryTextBox.Text.Length)
                     {
-                        _viewModel.SelectPreviousContextMenuItemCommand.Execute(null);
+                        _viewModel.SelectNextContextMenuItemCommand.Execute(null);
                         e.Handled = true;
                     }
                 }
-            }
-            else if (e.Key == Key.PageDown)
-            {
-                _viewModel.SelectNextPageCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.PageUp)
-            {
-                _viewModel.SelectPrevPageCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Back)
-            {
-                _deletePressed = true;
-            }
-            else
-            {
-                _viewModel.HandleContextMenu(e.Key, Keyboard.Modifiers);
+                else if (e.Key == Key.Left)
+                {
+                    if (SearchBox.QueryTextBox.CaretIndex == SearchBox.QueryTextBox.Text.Length)
+                    {
+                        if (_viewModel.Results != null && _viewModel.Results.IsContextMenuItemSelected())
+                        {
+                            _viewModel.SelectPreviousContextMenuItemCommand.Execute(null);
+                            e.Handled = true;
+                        }
+                    }
+                }
+                else if (e.Key == Key.PageDown)
+                {
+                    _viewModel.SelectNextPageCommand.Execute(null);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.PageUp)
+                {
+                    _viewModel.SelectPrevPageCommand.Execute(null);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Back)
+                {
+                    _deletePressed = true;
+                }
+                else
+                {
+                    _viewModel.HandleContextMenu(e.Key, Keyboard.Modifiers);
+                }
             }
         }
 
@@ -560,7 +628,7 @@ namespace PowerLauncher
 
             // To populate the AutoCompleteTextBox as soon as the selection is changed or set.
             // Setting it here instead of when the text is changed as there is a delay in executing the query and populating the result
-            if (_viewModel.Results != null && !string.IsNullOrEmpty(SearchBox.QueryTextBox.Text))
+            if (!string.IsNullOrEmpty(SearchBox.QueryTextBox.Text))
             {
                 SearchBox.AutoCompleteTextBlock.Text = MainViewModel.GetAutoCompleteText(
                     _viewModel.Results.SelectedIndex,
@@ -726,11 +794,6 @@ namespace PowerLauncher
             }
         }
 
-        private void OutroStoryboard_Completed(object sender, EventArgs e)
-        {
-            Hide();
-        }
-
         private void SearchBox_UpdateFlowDirection()
         {
             SearchBox.QueryTextBox.FlowDirection = MainViewModel.GetLanguageFlowDirection();
@@ -748,11 +811,7 @@ namespace PowerLauncher
             {
                 if (disposing)
                 {
-                    if (_firstDeleteTimer != null)
-                    {
-                        _firstDeleteTimer.Dispose();
-                    }
-
+                    _firstDeleteTimer?.Dispose();
                     _hwndSource?.Dispose();
                 }
 
@@ -780,6 +839,23 @@ namespace PowerLauncher
             }
 
             _hwndSource = null;
+        }
+
+        private void PluginsHintsList_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            QueryForSelectedPlugin();
+        }
+
+        private void QueryForSelectedPlugin()
+        {
+            if (_viewModel.Plugins.Count > 0 && _viewModel.SelectedPlugin != null)
+            {
+                _viewModel.ChangeQueryText(_viewModel.SelectedPlugin.Metadata.ActionKeyword, true);
+                SearchBox.QueryTextBox.Focus();
+
+                _viewModel.SelectedPlugin = null;
+                pluginsHintsList.ScrollIntoView(pluginsHintsList.Items[0]);
+            }
         }
     }
 }

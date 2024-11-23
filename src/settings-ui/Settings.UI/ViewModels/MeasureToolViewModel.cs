@@ -6,6 +6,7 @@ using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+
 using global::PowerToys.GPOWrapper;
 using Microsoft.PowerToys.Settings.UI.Library;
 using Microsoft.PowerToys.Settings.UI.Library.Helpers;
@@ -29,19 +30,13 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
         {
             SettingsUtils = settingsUtils;
 
-            if (settingsRepository == null)
-            {
-                throw new ArgumentNullException(nameof(settingsRepository));
-            }
+            ArgumentNullException.ThrowIfNull(settingsRepository);
 
             GeneralSettingsConfig = settingsRepository.SettingsConfig;
 
             InitializeEnabledValue();
 
-            if (measureToolSettingsRepository == null)
-            {
-                throw new ArgumentNullException(nameof(measureToolSettingsRepository));
-            }
+            ArgumentNullException.ThrowIfNull(measureToolSettingsRepository);
 
             Settings = measureToolSettingsRepository.SettingsConfig;
 

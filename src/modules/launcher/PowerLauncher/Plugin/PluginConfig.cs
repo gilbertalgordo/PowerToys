@@ -8,6 +8,7 @@ using System.IO.Abstractions;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+
 using Wox.Plugin;
 using Wox.Plugin.Logger;
 
@@ -39,7 +40,7 @@ namespace PowerLauncher.Plugin
 
         private static void ParsePluginConfigs(IEnumerable<string> directories)
         {
-            // todo use linq when diable plugin is implemented since parallel.foreach + list is not thread saft
+            // todo use linq when disable plugin is implemented since parallel.foreach + list is not thread saft
             foreach (var directory in directories)
             {
                 if (File.Exists(Path.Combine(directory, "NeedDelete.txt")))

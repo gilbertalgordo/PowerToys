@@ -2,10 +2,12 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+
 using FancyZonesEditor.Models;
 
 namespace FancyZonesEditor
@@ -80,8 +82,8 @@ namespace FancyZonesEditor
             TemplateModels.Insert((int)LayoutType.PriorityGrid, priorityGridModel);
 
             // set default layouts
-            DefaultLayouts.Set(priorityGridModel, MonitorConfigurationType.Horizontal);
             DefaultLayouts.Set(rowsModel, MonitorConfigurationType.Vertical);
+            DefaultLayouts.Set(priorityGridModel, MonitorConfigurationType.Horizontal);
         }
 
         // IsShiftKeyPressed - is the shift key currently being held down
@@ -231,7 +233,7 @@ namespace FancyZonesEditor
             {
                 foreach (LayoutModel model in CustomModels)
                 {
-                    if (model.Uuid == currentApplied.ZonesetUuid.ToUpperInvariant())
+                    if (string.Equals(model.Uuid, currentApplied.ZonesetUuid, StringComparison.OrdinalIgnoreCase))
                     {
                         // found match
                         foundModel = model;

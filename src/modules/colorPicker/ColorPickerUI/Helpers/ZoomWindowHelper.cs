@@ -8,6 +8,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Media.Imaging;
+
 using ColorPicker.ViewModelContracts;
 
 namespace ColorPicker.Helpers
@@ -91,7 +92,7 @@ namespace ColorPicker.Helpers
             ShowZoomWindow(point);
         }
 
-        private static BitmapSource BitmapToImageSource(Bitmap bitmap)
+        private static BitmapImage BitmapToImageSource(Bitmap bitmap)
         {
             using (MemoryStream memory = new MemoryStream())
             {

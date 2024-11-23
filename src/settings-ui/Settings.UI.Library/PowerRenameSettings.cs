@@ -4,6 +4,7 @@
 
 using System;
 using System.Text.Json.Serialization;
+
 using Microsoft.PowerToys.Settings.UI.Library.Interfaces;
 
 namespace Microsoft.PowerToys.Settings.UI.Library
@@ -24,10 +25,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
 
         public PowerRenameSettings(PowerRenameLocalProperties localProperties)
         {
-            if (localProperties == null)
-            {
-                throw new ArgumentNullException(nameof(localProperties));
-            }
+            ArgumentNullException.ThrowIfNull(localProperties);
 
             Properties = new PowerRenameProperties();
             Properties.PersistState.Value = localProperties.PersistState;

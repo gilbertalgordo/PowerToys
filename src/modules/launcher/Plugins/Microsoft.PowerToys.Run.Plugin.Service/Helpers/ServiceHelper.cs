@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.ServiceProcess;
 using System.Threading.Tasks;
+
 using Microsoft.PowerToys.Run.Plugin.Service.Properties;
 using Microsoft.Win32;
 using Wox.Infrastructure;
@@ -80,15 +81,9 @@ namespace Microsoft.PowerToys.Run.Plugin.Service.Helpers
 
         public static void ChangeStatus(ServiceResult serviceResult, Action action, IPublicAPI contextAPI)
         {
-            if (serviceResult == null)
-            {
-                throw new ArgumentNullException(nameof(serviceResult));
-            }
+            ArgumentNullException.ThrowIfNull(serviceResult);
 
-            if (contextAPI == null)
-            {
-                throw new ArgumentNullException(nameof(contextAPI));
-            }
+            ArgumentNullException.ThrowIfNull(contextAPI);
 
             try
             {
@@ -141,10 +136,7 @@ namespace Microsoft.PowerToys.Run.Plugin.Service.Helpers
 
         private static string GetResultSubTitle(ServiceController serviceController)
         {
-            if (serviceController == null)
-            {
-                throw new ArgumentNullException(nameof(serviceController));
-            }
+            ArgumentNullException.ThrowIfNull(serviceController);
 
             return $"{Resources.wox_plugin_service_status}: {GetLocalizedStatus(serviceController.Status)} - {Resources.wox_plugin_service_startup}: {GetLocalizedStartType(serviceController.StartType, serviceController.ServiceName)} - {Resources.wox_plugin_service_name}: {serviceController.ServiceName}";
         }

@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO.Abstractions;
+
 using Microsoft.PowerToys.Settings.UI.Helpers;
 using Microsoft.PowerToys.Settings.UI.Library;
 using Microsoft.PowerToys.Settings.UI.Library.Utilities;
@@ -73,7 +74,7 @@ namespace Microsoft.PowerToys.Settings.UI.Views
             }
         }
 
-        private int FilterRemapKeysList(List<KeysDataModel> remapKeysList)
+        public static int FilterRemapKeysList(List<KeysDataModel> remapKeysList)
         {
             if (remapKeysList != null)
             {

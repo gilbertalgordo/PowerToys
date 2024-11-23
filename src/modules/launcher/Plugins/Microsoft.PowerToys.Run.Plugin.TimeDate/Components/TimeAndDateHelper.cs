@@ -57,16 +57,17 @@ namespace Microsoft.PowerToys.Run.Plugin.TimeDate.Components
         /// </summary>
         /// <param name="date">date</param>
         /// <returns>Number of week in the month</returns>
-        internal static int GetWeekOfMonth(DateTime date)
+        internal static int GetWeekOfMonth(DateTime date, DayOfWeek formatSettingFirstDayOfWeek)
         {
             DateTime beginningOfMonth = new DateTime(date.Year, date.Month, 1);
+            int adjustment = 1; // We count from 1 to 7 and not from 0 to 6
 
-            while (date.Date.AddDays(1).DayOfWeek != CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek)
+            while (date.Date.AddDays(1).DayOfWeek != formatSettingFirstDayOfWeek)
             {
                 date = date.AddDays(1);
             }
 
-            return (int)Math.Truncate((double)date.Subtract(beginningOfMonth).TotalDays / 7f) + 1;
+            return (int)Math.Truncate((double)date.Subtract(beginningOfMonth).TotalDays / 7f) + adjustment;
         }
 
         /// <summary>
@@ -74,13 +75,12 @@ namespace Microsoft.PowerToys.Run.Plugin.TimeDate.Components
         /// </summary>
         /// <param name="date">Date</param>
         /// <returns>Number of the day in the week</returns>
-        internal static int GetNumberOfDayInWeek(DateTime date)
+        internal static int GetNumberOfDayInWeek(DateTime date, DayOfWeek formatSettingFirstDayOfWeek)
         {
             int daysInWeek = 7;
             int adjustment = 1; // We count from 1 to 7 and not from 0 to 6
-            int formatSettingFirstDayOfWeek = (int)CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
 
-            return ((int)(date.DayOfWeek + daysInWeek - formatSettingFirstDayOfWeek) % daysInWeek) + adjustment;
+            return ((date.DayOfWeek + daysInWeek - formatSettingFirstDayOfWeek) % daysInWeek) + adjustment;
         }
 
         /// <summary>
@@ -96,23 +96,87 @@ namespace Microsoft.PowerToys.Run.Plugin.TimeDate.Components
                 // Known date/time format
                 return true;
             }
-            else if (Regex.IsMatch(input, @"^u\d+") && input.Length <= 12 && long.TryParse(input.TrimStart('u'), out long secondsInt))
+            else if (Regex.IsMatch(input, @"^u[\+-]?\d{1,10}$") && long.TryParse(input.TrimStart('u'), out long secondsU))
             {
-                // unix time stamp
-                // we use long instead of int because int ist to small after 03:14:07 UTC 2038-01-19
-                timestamp = new DateTime(1970, 1, 1).AddSeconds(secondsInt).ToLocalTime();
+                // Unix time stamp
+                // We use long instead of int, because int is too small after 03:14:07 UTC 2038-01-19
+                timestamp = DateTimeOffset.FromUnixTimeSeconds(secondsU).LocalDateTime;
                 return true;
             }
-            else if (Regex.IsMatch(input, @"^ft\d+") && long.TryParse(input.TrimStart("ft".ToCharArray()), out long secondsLong))
+            else if (Regex.IsMatch(input, @"^ums[\+-]?\d{1,13}$") && long.TryParse(input.TrimStart("ums".ToCharArray()), out long millisecondsUms))
             {
-                // windows file time
-                timestamp = new DateTime(secondsLong);
+                // Unix time stamp in milliseconds
+                // We use long instead of int because int is too small after 03:14:07 UTC 2038-01-19
+                timestamp = DateTimeOffset.FromUnixTimeMilliseconds(millisecondsUms).LocalDateTime;
+                return true;
+            }
+            else if (Regex.IsMatch(input, @"^ft\d+$") && long.TryParse(input.TrimStart("ft".ToCharArray()), out long secondsFt))
+            {
+                // Windows file time
+                // DateTime.FromFileTime returns as local time.
+                timestamp = DateTime.FromFileTime(secondsFt);
                 return true;
             }
             else
             {
                 timestamp = new DateTime(1, 1, 1, 1, 1, 1);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Test if input is special parsing for Unix time, Unix time in milliseconds or File time.
+        /// </summary>
+        /// <param name="input">String with date/time</param>
+        /// <returns>True if yes, otherwise false</returns>
+        internal static bool IsSpecialInputParsing(string input)
+        {
+            return Regex.IsMatch(input, @"^.*(u|ums|ft)\d");
+        }
+
+        /// <summary>
+        /// Returns a CalendarWeekRule enum value based on the plugin setting.
+        /// </summary>
+        internal static CalendarWeekRule GetCalendarWeekRule(int pluginSetting)
+        {
+            switch (pluginSetting)
+            {
+                case 0:
+                    return CalendarWeekRule.FirstDay;
+                case 1:
+                    return CalendarWeekRule.FirstFullWeek;
+                case 2:
+                    return CalendarWeekRule.FirstFourDayWeek;
+                default:
+                    // Wrong json value and system setting (-1).
+                    return DateTimeFormatInfo.CurrentInfo.CalendarWeekRule;
+            }
+        }
+
+        /// <summary>
+        /// Returns a DayOfWeek enum value based on the FirstDayOfWeek plugin setting.
+        /// </summary>
+        internal static DayOfWeek GetFirstDayOfWeek(int pluginSetting)
+        {
+            switch (pluginSetting)
+            {
+                case 0:
+                    return DayOfWeek.Sunday;
+                case 1:
+                    return DayOfWeek.Monday;
+                case 2:
+                    return DayOfWeek.Tuesday;
+                case 3:
+                    return DayOfWeek.Wednesday;
+                case 4:
+                    return DayOfWeek.Thursday;
+                case 5:
+                    return DayOfWeek.Friday;
+                case 6:
+                    return DayOfWeek.Saturday;
+                default:
+                    // Wrong json value and system setting (-1).
+                    return DateTimeFormatInfo.CurrentInfo.FirstDayOfWeek;
             }
         }
     }

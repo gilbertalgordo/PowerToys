@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+
 using global::PowerToys.GPOWrapper;
 using Microsoft.PowerToys.Settings.UI.Library;
 using Microsoft.PowerToys.Settings.UI.Library.Helpers;
@@ -34,23 +35,17 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
             _settingsConfigFileFolder = configFileSubfolder;
 
             // To obtain the general PowerToys settings.
-            if (settingsRepository == null)
-            {
-                throw new ArgumentNullException(nameof(settingsRepository));
-            }
+            ArgumentNullException.ThrowIfNull(settingsRepository);
 
             GeneralSettingsConfig = settingsRepository.SettingsConfig;
 
             // To obtain the shortcut guide settings, if the file exists.
             // If not, to create a file with the default settings and to return the default configurations.
-            if (moduleSettingsRepository == null)
-            {
-                throw new ArgumentNullException(nameof(moduleSettingsRepository));
-            }
+            ArgumentNullException.ThrowIfNull(moduleSettingsRepository);
 
             Settings = moduleSettingsRepository.SettingsConfig;
 
-            // set the callback functions value to hangle outgoing IPC message.
+            // set the callback functions value to handle outgoing IPC message.
             SendConfigMSG = ipcMSGCallBackFunc;
 
             InitializeEnabledValue();

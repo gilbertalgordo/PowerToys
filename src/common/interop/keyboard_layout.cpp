@@ -27,6 +27,17 @@ std::wstring LayoutMap::GetKeyName(DWORD key)
     return impl->GetKeyName(key);
 }
 
+DWORD LayoutMap::GetKeyFromName(const std::wstring& name)
+{
+    auto list = impl->GetKeyNameList(false);
+    for (const auto& [value, key] : list)
+    {
+        if (key == name)
+            return value;
+    }
+    return {};
+}
+
 std::vector<DWORD> LayoutMap::GetKeyCodeList(const bool isShortcut)
 {
     return impl->GetKeyCodeList(isShortcut);
@@ -145,7 +156,7 @@ void LayoutMap::LayoutMapImpl::UpdateLayout()
     keyboardLayoutMap[VK_RETURN | numpadOriginBit] = L"Enter (Numpad)";
     keyboardLayoutMap[VK_DIVIDE | numpadOriginBit] = L"/ (Numpad)";
 
-    keyboardLayoutMap[VK_SUBTRACT] = L"- (Substract)";
+    keyboardLayoutMap[VK_SUBTRACT] = L"- (Subtract)";
     keyboardLayoutMap[VK_SELECT] = L"Select";
     keyboardLayoutMap[VK_PRINT] = L"Print";
     keyboardLayoutMap[VK_EXECUTE] = L"Execute";
@@ -238,6 +249,7 @@ void LayoutMap::LayoutMapImpl::UpdateLayout()
     keyboardLayoutMap[VK_NONCONVERT] = L"IME Non-Convert";
     keyboardLayoutMap[VK_ACCEPT] = L"IME Kana";
     keyboardLayoutMap[VK_MODECHANGE] = L"IME Mode Change";
+    keyboardLayoutMap[VK_DECIMAL] = L". (Numpad)";
     keyboardLayoutMap[CommonSharedConstants::VK_DISABLED] = L"Disable";
 }
 

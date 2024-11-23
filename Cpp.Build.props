@@ -22,14 +22,6 @@
     </ProjectConfiguration>
   </ItemGroup>
 
-  <!-- Props that should be disabled while building on CI server -->
-  <ItemDefinitionGroup Condition="'$(CIBuild)'!='true'">
-    <ClCompile>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-    </ClCompile>
-  </ItemDefinitionGroup>
-
   <!-- Run code analysis locally and in PR CI, but not on release CI -->
   <PropertyGroup Condition="'$(SkipCppCodeAnalysis)' == ''">
     <RunCodeAnalysis>true</RunCodeAnalysis>
@@ -41,21 +33,32 @@
     <PreferredToolArchitecture>x64</PreferredToolArchitecture>
     <PreferredToolArchitecture Condition="'$(PROCESSOR_ARCHITECTURE)' == 'ARM64' or '$(PROCESSOR_ARCHITEW6432)' == 'ARM64'">arm64</PreferredToolArchitecture>
     <VcpkgEnabled>false</VcpkgEnabled>
+    <ReplaceWildcardsInProjectItems>true</ReplaceWildcardsInProjectItems>
     <ExternalIncludePath>$(MSBuildThisFileFullPath)\..\deps\;$(MSBuildThisFileFullPath)\..\packages\;$(ExternalIncludePath)</ExternalIncludePath>
+    <!-- Enable control flow guard for C++ projects that don't consume any C++ files -->
+    <!-- This covers the case where a .dll exports a .lib, but doesn't have any ClCompile entries. -->
+    <LinkControlFlowGuard>Guard</LinkControlFlowGuard>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PrecompiledHeader Condition="'$(UsePrecompiledHeaders)' != 'false'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4679;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4679;5271;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <DisableAnalyzeExternal >true</DisableAnalyzeExternal>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <ConformanceMode>false</ConformanceMode>
       <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-	<BuildStlModules>false</BuildStlModules>
+      <BuildStlModules>false</BuildStlModules>
       <AdditionalOptions>/await %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!-- TODO: _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING for compatibility with VS 17.8. Check if we can remove. -->
+      <PreprocessorDefinitions>_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!-- CLR + CFG are not compatible >:{ -->
+      <ControlFlowGuard Condition="'$(CLRSupport)' == ''">Guard</ControlFlowGuard>
+      <DebugInformationFormat Condition="'%(ControlFlowGuard)' == 'Guard'">ProgramDatabase</DebugInformationFormat>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -70,7 +73,6 @@
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -81,7 +83,6 @@
     <ClCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization>MaxSpeed</Optimization>
-      <SDLCheck>false</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -93,19 +94,19 @@
     </Link>
   </ItemDefinitionGroup>
 
-  <!-- Global props -->
-  <PropertyGroup Label="Globals"
-    Condition="'$(OverrideWindowsTargetPlatformVersion)'!='True'">
-    <WindowsTargetPlatformVersion>10.0.20348.0</WindowsTargetPlatformVersion>
-    <TargetPlatformVersion>10.0.20348.0</TargetPlatformVersion>
+  <!-- Global props OverrideWindowsTargetPlatformVersion-->
+  <PropertyGroup Label="Globals">
+    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+    <TargetPlatformVersion>10.0.22621.0</TargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.19041.0</WindowsTargetPlatformMinVersion>
   </PropertyGroup>
 
   <!-- Props that are constant for both Debug and Release configurations -->
   <PropertyGroup Label="Configuration">
-    <PlatformToolset Condition="'$(OverridePlatformToolset)'!='True'">v143</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <DesktopCompatible>true</DesktopCompatible>
+    <SpectreMitigation>Spectre</SpectreMitigation>
   </PropertyGroup>
 
   <!-- Debug/Release props -->

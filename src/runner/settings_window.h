@@ -4,7 +4,8 @@
 
 enum class ESettingsWindowNames
 {
-    Overview = 0,
+    Dashboard = 0,
+    Overview,
     Awake,
     ColorPicker,
     FancyZones,
@@ -19,8 +20,12 @@ enum class ESettingsWindowNames
     Hosts,
     MeasureTool,
     PowerOCR,
+    Workspaces,
     RegistryPreview,
     CropAndLock,
+    EnvironmentVariables,
+    AdvancedPaste,
+    NewPlus,
 };
 
 std::string ESettingsWindowNames_to_string(ESettingsWindowNames value);

@@ -7,10 +7,13 @@ namespace Microsoft.PowerToys.Settings.UI.OOBE.Enums
     public enum PowerToysModules
     {
         Overview = 0,
+        AdvancedPaste,
         AlwaysOnTop,
         Awake,
+        CmdNotFound,
         ColorPicker,
         CropAndLock,
+        EnvironmentVariables,
         FancyZones,
         FileLocksmith,
         FileExplorer,
@@ -27,8 +30,9 @@ namespace Microsoft.PowerToys.Settings.UI.OOBE.Enums
         VideoConference,
         MeasureTool,
         Hosts,
-        PastePlain,
+        Workspaces,
         WhatsNew,
         RegistryPreview,
+        NewPlus,
     }
 }

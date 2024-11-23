@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
+
 using AllExperiments;
 using Microsoft.PowerToys.Settings.UI.OOBE.Enums;
 using Microsoft.PowerToys.Settings.UI.OOBE.ViewModel;
@@ -54,7 +55,7 @@ namespace Microsoft.PowerToys.Settings.UI.OOBE.Views
         {
             if (OobeShellPage.OpenMainWindowCallback != null)
             {
-                OobeShellPage.OpenMainWindowCallback(typeof(GeneralPage));
+                OobeShellPage.OpenMainWindowCallback(typeof(DashboardPage));
             }
 
             ViewModel.LogOpeningSettingsEvent();

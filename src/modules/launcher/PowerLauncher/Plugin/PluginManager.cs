@@ -10,7 +10,12 @@ using System.Globalization;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+
+using global::PowerToys.GPOWrapper;
 using PowerLauncher.Properties;
 using Wox.Infrastructure.Storage;
 using Wox.Plugin;
@@ -25,7 +30,9 @@ namespace PowerLauncher.Plugin
     {
         private static readonly IFileSystem FileSystem = new FileSystem();
         private static readonly IDirectory Directory = FileSystem.Directory;
-        private static readonly object AllPluginsLock = new object();
+        private static readonly Lock AllPluginsLock = new Lock();
+
+        private static readonly CompositeFormat FailedToInitializePluginsDescription = System.Text.CompositeFormat.Parse(Properties.Resources.FailedToInitializePluginsDescription);
 
         private static IEnumerable<PluginPair> _contextMenuPlugins = new List<PluginPair>();
 
@@ -51,18 +58,20 @@ namespace PowerLauncher.Plugin
                         if (_allPlugins == null)
                         {
                             _allPlugins = PluginConfig.Parse(Directories)
-                                .Where(x => x.Language.ToUpperInvariant() == AllowedLanguage.CSharp)
+                                .Where(x => string.Equals(x.Language, AllowedLanguage.CSharp, StringComparison.OrdinalIgnoreCase))
                                 .GroupBy(x => x.ID) // Deduplicates plugins by ID, choosing for each ID the highest DLL product version. This fixes issues such as https://github.com/microsoft/PowerToys/issues/14701
                                 .Select(g => g.OrderByDescending(x => // , where an upgrade didn't remove older versions of the plugins.
                                 {
                                     try
                                     {
-                                        // Return a comparable produce version.
+                                        // Return a comparable product version.
                                         var fileVersion = FileVersionInfo.GetVersionInfo(x.ExecuteFilePath);
-                                        return ((uint)fileVersion.ProductMajorPart << 48)
-                                        | ((uint)fileVersion.ProductMinorPart << 32)
-                                        | ((uint)fileVersion.ProductBuildPart << 16)
-                                        | ((uint)fileVersion.ProductPrivatePart);
+
+                                        // Convert each part to an unsigned 32 bit integer, then extend to 64 bit.
+                                        return ((ulong)(uint)fileVersion.ProductMajorPart << 48)
+                                            | ((ulong)(uint)fileVersion.ProductMinorPart << 32)
+                                            | ((ulong)(uint)fileVersion.ProductBuildPart << 16)
+                                            | (ulong)(uint)fileVersion.ProductPrivatePart;
                                     }
                                     catch (System.IO.FileNotFoundException)
                                     {
@@ -140,6 +149,25 @@ namespace PowerLauncher.Plugin
             var failedPlugins = new ConcurrentQueue<PluginPair>();
             Parallel.ForEach(AllPlugins, pair =>
             {
+                // Check policy state for the plugin and update metadata
+                var enabledPolicyState = GPOWrapper.GetRunPluginEnabledValue(pair.Metadata.ID);
+                if (enabledPolicyState == GpoRuleConfigured.Enabled)
+                {
+                    pair.Metadata.Disabled = false;
+                    pair.Metadata.IsEnabledPolicyConfigured = true;
+                    Log.Info($"The plugin <{pair.Metadata.Name}> is enabled by policy.", typeof(PluginManager));
+                }
+                else if (enabledPolicyState == GpoRuleConfigured.Disabled)
+                {
+                    pair.Metadata.Disabled = true;
+                    pair.Metadata.IsEnabledPolicyConfigured = true;
+                    Log.Info($"The plugin <{pair.Metadata.Name}> is disabled by policy.", typeof(PluginManager));
+                }
+                else if (enabledPolicyState == GpoRuleConfigured.WrongValue)
+                {
+                    Log.Warn($"Wrong policy value for enabled policy for plugin <{pair.Metadata.Name}>.", typeof(PluginManager));
+                }
+
                 if (pair.Metadata.Disabled)
                 {
                     return;
@@ -155,20 +183,17 @@ namespace PowerLauncher.Plugin
 
             _contextMenuPlugins = GetPluginsForInterface<IContextMenu>();
 
-            if (failedPlugins.Any())
+            if (!failedPlugins.IsEmpty)
             {
-                var failed = string.Join(",", failedPlugins.Select(x => x.Metadata.Name));
-                var description = string.Format(CultureInfo.CurrentCulture, Resources.FailedToInitializePluginsDescription, failed);
-                API.ShowMsg(Resources.FailedToInitializePluginsTitle, description, string.Empty, false);
+                var failed = string.Join(", ", failedPlugins.Select(x => x.Metadata.Name));
+                var description = $"{string.Format(CultureInfo.CurrentCulture, FailedToInitializePluginsDescription, failed)}\n\n{Resources.FailedToInitializePluginsDescriptionPartTwo}";
+                Application.Current.Dispatcher.InvokeAsync(() => API.ShowMsg(Resources.FailedToInitializePluginsTitle, description, string.Empty, false));
             }
         }
 
         public static List<Result> QueryForPlugin(PluginPair pair, Query query, bool delayedExecution = false)
         {
-            if (pair == null)
-            {
-                throw new ArgumentNullException(nameof(pair));
-            }
+            ArgumentNullException.ThrowIfNull(pair);
 
             if (!pair.IsPluginInitialized)
             {
@@ -197,8 +222,7 @@ namespace PowerLauncher.Plugin
 
                     if (results != null)
                     {
-                        UpdatePluginMetadata(results, metadata, query);
-                        UpdateResultWithActionKeyword(results, query);
+                        UpdateResults(results, metadata, query);
                     }
                 });
 
@@ -210,14 +234,6 @@ namespace PowerLauncher.Plugin
                 metadata.QueryCount += 1;
                 metadata.AvgQueryTime = metadata.QueryCount == 1 ? milliseconds : (metadata.AvgQueryTime + milliseconds) / 2;
 
-                if (results != null)
-                {
-                    foreach (var result in results)
-                    {
-                        result.Metadata = pair.Metadata;
-                    }
-                }
-
                 return results;
             }
             catch (Exception e)
@@ -228,10 +244,15 @@ namespace PowerLauncher.Plugin
             }
         }
 
-        private static List<Result> UpdateResultWithActionKeyword(List<Result> results, Query query)
+        private static void UpdateResults(List<Result> results, PluginMetadata metadata, Query query)
         {
             foreach (Result result in results)
             {
+                result.PluginDirectory = metadata.PluginDirectory;
+                result.PluginID = metadata.ID;
+                result.OriginQuery = query;
+                result.Metadata = metadata;
+
                 if (string.IsNullOrEmpty(result.QueryTextDisplay))
                 {
                     result.QueryTextDisplay = result.Title;
@@ -243,21 +264,13 @@ namespace PowerLauncher.Plugin
                     result.QueryTextDisplay = string.Format(CultureInfo.CurrentCulture, "{0} {1}", query.ActionKeyword, result.QueryTextDisplay);
                 }
             }
-
-            return results;
         }
 
         public static void UpdatePluginMetadata(List<Result> results, PluginMetadata metadata, Query query)
         {
-            if (results == null)
-            {
-                throw new ArgumentNullException(nameof(results));
-            }
+            ArgumentNullException.ThrowIfNull(results);
 
-            if (metadata == null)
-            {
-                throw new ArgumentNullException(nameof(metadata));
-            }
+            ArgumentNullException.ThrowIfNull(metadata);
 
             foreach (var r in results)
             {

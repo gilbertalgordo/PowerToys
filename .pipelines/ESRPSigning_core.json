@@ -5,6 +5,8 @@
         {
             "MatchedPath": [
                 "*.resources.dll",
+                
+                "WinUI3Apps\\Assets\\Settings\\Scripts\\*.ps1",
 
                 "PowerToys.ActionRunner.exe",
                 "PowerToys.Update.exe",
@@ -28,7 +30,10 @@
 
                 "PowerToys.AlwaysOnTop.exe",
                 "PowerToys.AlwaysOnTopModuleInterface.dll",
-                
+
+                "PowerToys.CmdNotFoundModuleInterface.dll",
+                "PowerToys.CmdNotFound.dll",
+
                 "PowerToys.ColorPicker.dll",
                 "PowerToys.ColorPickerUI.dll",
                 "PowerToys.ColorPickerUI.exe",
@@ -40,7 +45,9 @@
                 "PowerToys.PowerOCR.dll",
                 "PowerToys.PowerOCR.exe",
 
-                "PowerToys.PastePlainModuleInterface.dll",
+                "PowerToys.AdvancedPasteModuleInterface.dll",
+                "WinUI3Apps\\PowerToys.AdvancedPaste.exe",
+                "WinUI3Apps\\PowerToys.AdvancedPaste.dll",
 
                 "PowerToys.AwakeModuleInterface.dll",
                 "PowerToys.Awake.exe",
@@ -49,6 +56,7 @@
                 "fancyzones.dll",
                 "PowerToys.FancyZonesEditor.exe",
                 "PowerToys.FancyZonesEditor.dll",
+                "PowerToys.FancyZonesEditorCommon.dll",
                 "PowerToys.FancyZonesModuleInterface.dll",
                 "PowerToys.FancyZones.exe",
 
@@ -73,6 +81,12 @@
                 "PowerToys.PdfThumbnailProviderCpp.dll",
                 "PowerToys.powerpreview.dll",
                 "PowerToys.PreviewHandlerCommon.dll",
+                "PowerToys.QoiPreviewHandler.dll",
+                "PowerToys.QoiPreviewHandler.exe",
+                "PowerToys.QoiPreviewHandlerCpp.dll",
+                "PowerToys.QoiThumbnailProvider.dll",
+                "PowerToys.QoiThumbnailProvider.exe",
+                "PowerToys.QoiThumbnailProviderCpp.dll",
                 "PowerToys.StlThumbnailProvider.dll",
                 "PowerToys.StlThumbnailProvider.exe",
                 "PowerToys.StlThumbnailProviderCpp.dll",
@@ -84,6 +98,7 @@
                 "PowerToys.SvgThumbnailProviderCpp.dll",
 
                 "WinUI3Apps\\PowerToys.HostsModuleInterface.dll",
+                "WinUI3Apps\\PowerToys.HostsUILib.dll",
                 "WinUI3Apps\\PowerToys.Hosts.dll",
                 "WinUI3Apps\\PowerToys.Hosts.exe",
 
@@ -91,12 +106,19 @@
                 "WinUI3Apps\\PowerToys.FileLocksmithExt.dll",
                 "WinUI3Apps\\PowerToys.FileLocksmithUI.exe",
                 "WinUI3Apps\\PowerToys.FileLocksmithUI.dll",
+                "WinUI3Apps\\PowerToys.FileLocksmithContextMenu.dll",
+                "FileLocksmithContextMenuPackage.msix",
 
                 "WinUI3Apps\\Peek.Common.dll",
                 "WinUI3Apps\\Peek.FilePreviewer.dll",
                 "WinUI3Apps\\Powertoys.Peek.UI.dll",
                 "WinUI3Apps\\Powertoys.Peek.UI.exe",
                 "WinUI3Apps\\Powertoys.Peek.dll",
+
+                "WinUI3Apps\\PowerToys.EnvironmentVariablesModuleInterface.dll",
+                "WinUI3Apps\\PowerToys.EnvironmentVariablesUILib.dll",
+                "WinUI3Apps\\PowerToys.EnvironmentVariables.dll",
+                "WinUI3Apps\\PowerToys.EnvironmentVariables.exe",
 
                 "PowerToys.ImageResizer.exe",
                 "PowerToys.ImageResizer.dll",
@@ -144,6 +166,7 @@
                 "PowerToys.FindMyMouse.dll",
                 "PowerToys.MouseHighlighter.dll",
                 "PowerToys.MouseJump.dll",
+                "PowerToys.MouseJump.Common.dll",
                 "PowerToys.MousePointerCrosshairs.dll",
                 "PowerToys.MouseJumpUI.dll",
                 "PowerToys.MouseJumpUI.exe",
@@ -156,6 +179,9 @@
                 "PowerToys.MouseWithoutBordersHelper.dll",
                 "PowerToys.MouseWithoutBordersHelper.exe",
 
+                "WinUI3Apps\\PowerToys.NewPlus.ShellExtension.dll",
+                "WinUI3Apps\\NewPlusPackage.msix",
+
                 "PowerAccent.Core.dll",
                 "PowerToys.PowerAccent.dll",
                 "PowerToys.PowerAccent.exe",
@@ -167,7 +193,18 @@
                 "WinUI3Apps\\PowerToys.PowerRenameContextMenu.dll",
                 "WinUI3Apps\\PowerRenameContextMenuPackage.msix",
 
+                "PowerToys.WorkspacesSnapshotTool.exe",
+                "PowerToys.WorkspacesLauncher.exe",
+                "PowerToys.WorkspacesWindowArranger.exe",
+                "PowerToys.WorkspacesEditor.exe",
+                "PowerToys.WorkspacesEditor.dll",
+                "PowerToys.WorkspacesLauncherUI.exe",
+                "PowerToys.WorkspacesLauncherUI.dll",
+                "PowerToys.WorkspacesModuleInterface.dll",
+                "PowerToys.WorkspacesCsharpLibrary.dll",
+
                 "WinUI3Apps\\PowerToys.RegistryPreviewExt.dll",
+                "WinUI3Apps\\PowerToys.RegistryPreviewUILib.dll",
                 "WinUI3Apps\\PowerToys.RegistryPreview.dll",
                 "WinUI3Apps\\PowerToys.RegistryPreview.exe",
 
@@ -241,6 +278,7 @@
                 "Mages.Core.dll",
                 "JetBrains.Annotations.dll",
                 "NLog.Extensions.Logging.dll",
+                "getfilesiginforedist.dll",
                 "concrt140_app.dll",
                 "msvcp140_1_app.dll",
                 "msvcp140_2_app.dll",
@@ -281,10 +319,17 @@
                 "MessagePack.Annotations.dll",
                 "MessagePack.dll",
                 "Nerdbank.Streams.dll",
+                "WinUI3Apps\\ReverseMarkdown.dll",
                 "WinUI3Apps\\SharpCompress.dll",
+                "WinUI3Apps\\ZstdSharp.dll",
+                "TestableIO.System.IO.Abstractions.dll",
+                "WinUI3Apps\\TestableIO.System.IO.Abstractions.dll",
+                "TestableIO.System.IO.Abstractions.Wrappers.dll",
+                "WinUI3Apps\\TestableIO.System.IO.Abstractions.Wrappers.dll",
                 "ColorCode.Core.dll", 
                 "ColorCode.UWP.dll",
                 "UnitsNet.dll",
+                "UtfUnknown.dll",
                 "Wpf.Ui.dll"
             ],
             "SigningInfo": {

@@ -2,13 +2,15 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Threading;
 using System.Windows.Input;
-using Common.UI;
+
+using global::PowerToys.GPOWrapper;
 using Microsoft.PowerToys.Settings.UI.Library;
 using PowerLauncher.Helper;
 using PowerLauncher.Plugin;
@@ -16,6 +18,7 @@ using Wox.Infrastructure.Hotkey;
 using Wox.Infrastructure.UserSettings;
 using Wox.Plugin;
 using Wox.Plugin.Logger;
+
 using JsonException = System.Text.Json.JsonException;
 
 namespace PowerLauncher
@@ -23,12 +26,13 @@ namespace PowerLauncher
     // Watch for /Local/Microsoft/PowerToys/Launcher/Settings.json changes
     public class SettingsReader : BaseModel
     {
-        private readonly ISettingsUtils _settingsUtils;
+        private readonly SettingsUtils _settingsUtils;
 
         private const int MaxRetries = 10;
-        private static readonly object _readSyncObject = new object();
+        private static readonly Lock _readSyncObject = new Lock();
         private readonly PowerToysRunSettings _settings;
         private readonly ThemeManager _themeManager;
+        private Action _refreshPluginsOverviewCallback;
 
         private IFileSystemWatcher _watcher;
 
@@ -41,9 +45,6 @@ namespace PowerLauncher
             var overloadSettings = _settingsUtils.GetSettingsOrDefault<PowerLauncherSettings>(PowerLauncherSettings.ModuleName);
             UpdateSettings(overloadSettings);
             _settingsUtils.SaveSettings(overloadSettings.ToJsonString(), PowerLauncherSettings.ModuleName);
-
-            // Apply theme at startup
-            _themeManager.ChangeTheme(_settings.Theme, true);
         }
 
         public void CreateSettingsIfNotExists()
@@ -72,7 +73,7 @@ namespace PowerLauncher
 
         public void ReadSettings()
         {
-            Monitor.Enter(_readSyncObject);
+            _readSyncObject.Enter();
             var retry = true;
             var retryCount = 0;
             while (retry)
@@ -91,7 +92,7 @@ namespace PowerLauncher
                     foreach (var setting in overloadSettings.Plugins)
                     {
                         var plugin = PluginManager.AllPlugins.FirstOrDefault(x => x.Metadata.ID == setting.Id);
-                        plugin?.Update(setting, App.API);
+                        plugin?.Update(setting, App.API, _refreshPluginsOverviewCallback);
                     }
 
                     var openPowerlauncher = ConvertHotkey(overloadSettings.Properties.OpenPowerLauncher);
@@ -158,7 +159,7 @@ namespace PowerLauncher
                     if (_settings.Theme != overloadSettings.Properties.Theme)
                     {
                         _settings.Theme = overloadSettings.Properties.Theme;
-                        _themeManager.ChangeTheme(_settings.Theme, true);
+                        _themeManager.SetTheme(true);
                     }
 
                     if (_settings.StartupPosition != overloadSettings.Properties.Position)
@@ -169,6 +170,21 @@ namespace PowerLauncher
                     if (_settings.GenerateThumbnailsFromFiles != overloadSettings.Properties.GenerateThumbnailsFromFiles)
                     {
                         _settings.GenerateThumbnailsFromFiles = overloadSettings.Properties.GenerateThumbnailsFromFiles;
+                    }
+
+                    if (_settings.ShouldUsePinyin != overloadSettings.Properties.UsePinyin)
+                    {
+                        _settings.ShouldUsePinyin = overloadSettings.Properties.UsePinyin;
+                    }
+
+                    if (_settings.ShowPluginsOverview != (PowerToysRunSettings.ShowPluginsOverviewMode)overloadSettings.Properties.ShowPluginsOverview)
+                    {
+                        _settings.ShowPluginsOverview = (PowerToysRunSettings.ShowPluginsOverviewMode)overloadSettings.Properties.ShowPluginsOverview;
+                    }
+
+                    if (_settings.TitleFontSize != overloadSettings.Properties.TitleFontSize)
+                    {
+                        _settings.TitleFontSize = overloadSettings.Properties.TitleFontSize;
                     }
 
                     retry = false;
@@ -208,7 +224,12 @@ namespace PowerLauncher
                 }
             }
 
-            Monitor.Exit(_readSyncObject);
+            _readSyncObject.Exit();
+        }
+
+        public void SetRefreshPluginsOverviewCallback(Action callback)
+        {
+            _refreshPluginsOverviewCallback = callback;
         }
 
         private static string ConvertHotkey(HotkeySettings hotkey)
@@ -237,6 +258,7 @@ namespace PowerLauncher
                 IconPathDark = GetIcon(x.Metadata, x.Metadata.IcoPathDark),
                 IconPathLight = GetIcon(x.Metadata, x.Metadata.IcoPathLight),
                 AdditionalOptions = x.Plugin is ISettingProvider ? (x.Plugin as ISettingProvider).AdditionalOptions : new List<PluginAdditionalOption>(),
+                EnabledPolicyUiState = (int)GpoRuleConfigured.NotConfigured,
             });
         }
 
@@ -246,25 +268,32 @@ namespace PowerLauncher
         private static void UpdateSettings(PowerLauncherSettings settings)
         {
             var defaultPlugins = GetDefaultPluginsSettings().ToDictionary(x => x.Id);
+            var defaultPluginsByName = GetDefaultPluginsSettings().ToDictionary(x => x.Name);
+
             foreach (PowerLauncherPluginSettings plugin in settings.Plugins)
             {
-                if (defaultPlugins.ContainsKey(plugin.Id))
+                PowerLauncherPluginSettings value = null;
+                if ((plugin.Id != null && defaultPlugins.TryGetValue(plugin.Id, out value)) || (!string.IsNullOrEmpty(plugin.Name) && defaultPluginsByName.TryGetValue(plugin.Name, out value)))
                 {
-                    var additionalOptions = CombineAdditionalOptions(defaultPlugins[plugin.Id].AdditionalOptions, plugin.AdditionalOptions);
-                    plugin.Name = defaultPlugins[plugin.Id].Name;
-                    plugin.Description = defaultPlugins[plugin.Id].Description;
-                    plugin.Author = defaultPlugins[plugin.Id].Author;
-                    plugin.IconPathDark = defaultPlugins[plugin.Id].IconPathDark;
-                    plugin.IconPathLight = defaultPlugins[plugin.Id].IconPathLight;
-                    defaultPlugins[plugin.Id] = plugin;
-                    defaultPlugins[plugin.Id].AdditionalOptions = additionalOptions;
+                    var id = value.Id;
+                    var name = value.Name;
+                    var additionalOptions = plugin.AdditionalOptions != null ? CombineAdditionalOptions(value.AdditionalOptions, plugin.AdditionalOptions) : value.AdditionalOptions;
+                    var enabledPolicyState = GPOWrapper.GetRunPluginEnabledValue(id);
+                    plugin.Name = name;
+                    plugin.Description = value.Description;
+                    plugin.Author = value.Author;
+                    plugin.IconPathDark = value.IconPathDark;
+                    plugin.IconPathLight = value.IconPathLight;
+                    plugin.EnabledPolicyUiState = (int)enabledPolicyState;
+                    defaultPlugins[id] = plugin;
+                    defaultPlugins[id].AdditionalOptions = additionalOptions;
                 }
             }
 
             settings.Plugins = defaultPlugins.Values.ToList();
         }
 
-        private static IEnumerable<PluginAdditionalOption> CombineAdditionalOptions(IEnumerable<PluginAdditionalOption> defaultAdditionalOptions, IEnumerable<PluginAdditionalOption> additionalOptions)
+        private static Dictionary<string, PluginAdditionalOption>.ValueCollection CombineAdditionalOptions(IEnumerable<PluginAdditionalOption> defaultAdditionalOptions, IEnumerable<PluginAdditionalOption> additionalOptions)
         {
             var defaultOptions = defaultAdditionalOptions.ToDictionary(x => x.Key);
             foreach (var option in additionalOptions)
@@ -272,6 +301,9 @@ namespace PowerLauncher
                 if (option.Key != null && defaultOptions.TryGetValue(option.Key, out PluginAdditionalOption defaultOption))
                 {
                     defaultOption.Value = option.Value;
+                    defaultOption.ComboBoxValue = option.ComboBoxValue;
+                    defaultOption.TextValue = option.TextValue;
+                    defaultOption.NumberValue = option.NumberValue;
                 }
             }
 

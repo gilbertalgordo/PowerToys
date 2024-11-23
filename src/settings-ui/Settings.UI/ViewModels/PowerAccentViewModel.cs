@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+
 using global::PowerToys.GPOWrapper;
 using Microsoft.PowerToys.Settings.UI.Library;
 using Microsoft.PowerToys.Settings.UI.Library.Enumerations;
@@ -24,19 +25,26 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
         private readonly string[] _languageOptions =
         {
             "ALL",
+            "BG",
             "CA",
+            "CRH",
             "CUR",
             "HR",
             "CZ",
+            "DK",
             "GA",
             "GD",
             "NL",
+            "EL",
             "EST",
+            "EPO",
+            "FI",
             "FR",
             "DE",
             "HE",
             "HU",
             "IS",
+            "IPA",
             "IT",
             "KU",
             "LT",
@@ -47,9 +55,12 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
             "PL",
             "PT",
             "RO",
+            "ROM",
             "SK",
+            "SL",
             "SP",
             "SR",
+            "SR_CYRL",
             "SV",
             "TK",
             "CY",
@@ -73,10 +84,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
         public PowerAccentViewModel(ISettingsUtils settingsUtils, ISettingsRepository<GeneralSettings> settingsRepository, Func<string, int> ipcMSGCallBackFunc)
         {
             // To obtain the general settings configurations of PowerToys Settings.
-            if (settingsRepository == null)
-            {
-                throw new ArgumentNullException(nameof(settingsRepository));
-            }
+            ArgumentNullException.ThrowIfNull(settingsRepository);
 
             _settingsUtils = settingsUtils ?? throw new ArgumentNullException(nameof(settingsUtils));
             GeneralSettingsConfig = settingsRepository.SettingsConfig;
@@ -100,7 +108,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
 
             _toolbarPositionIndex = Array.IndexOf(_toolbarOptions, _powerAccentSettings.Properties.ToolbarPosition.Value);
 
-            // set the callback functions value to hangle outgoing IPC message.
+            // set the callback functions value to handle outgoing IPC message.
             SendConfigMSG = ipcMSGCallBackFunc;
         }
 
@@ -160,6 +168,24 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
                 {
                     _powerAccentSettings.Properties.ActivationKey = (PowerAccentActivationKey)value;
                     OnPropertyChanged(nameof(ActivationKey));
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        public bool DoNotActivateOnGameMode
+        {
+            get
+            {
+                return _powerAccentSettings.Properties.DoNotActivateOnGameMode;
+            }
+
+            set
+            {
+                if (value != _powerAccentSettings.Properties.DoNotActivateOnGameMode)
+                {
+                    _powerAccentSettings.Properties.DoNotActivateOnGameMode = value;
+                    OnPropertyChanged(nameof(DoNotActivateOnGameMode));
                     RaisePropertyChanged();
                 }
             }

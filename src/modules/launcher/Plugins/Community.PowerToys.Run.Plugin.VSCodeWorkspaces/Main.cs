@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+
 using Community.PowerToys.Run.Plugin.VSCodeWorkspaces.Properties;
 using Community.PowerToys.Run.Plugin.VSCodeWorkspaces.RemoteMachinesHelper;
 using Community.PowerToys.Run.Plugin.VSCodeWorkspaces.VSCodeHelper;
@@ -22,6 +23,8 @@ namespace Community.PowerToys.Run.Plugin.VSCodeWorkspaces
         public string Name => GetTranslatedPluginTitle();
 
         public string Description => GetTranslatedPluginDescription();
+
+        public static string PluginID => "525995402BEF4A8CA860D92F6D108092";
 
         public Main()
         {
@@ -136,7 +139,7 @@ namespace Community.PowerToys.Run.Plugin.VSCodeWorkspaces
                 });
             }
 
-            results = results.Where(a => a.Title.ToLowerInvariant().Contains(query.Search.ToLowerInvariant())).ToList();
+            results = results.Where(a => a.Title.Contains(query.Search, StringComparison.InvariantCultureIgnoreCase)).ToList();
 
             results.ForEach(x =>
                     {

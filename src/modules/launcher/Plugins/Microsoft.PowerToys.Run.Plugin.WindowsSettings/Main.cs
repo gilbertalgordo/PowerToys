@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+
 using ManagedCommon;
 using Microsoft.PowerToys.Run.Plugin.WindowsSettings.Helper;
 using Microsoft.PowerToys.Run.Plugin.WindowsSettings.Properties;
@@ -71,6 +72,11 @@ namespace Microsoft.PowerToys.Run.Plugin.WindowsSettings
         /// Gets the localized description.
         /// </summary>
         public string Description => Resources.PluginDescription;
+
+        /// <summary>
+        /// Gets the plugin ID for validation
+        /// </summary>
+        public static string PluginID => "5043CECEE6A748679CBE02D27D83747A";
 
         /// <summary>
         /// Initialize the plugin with the given <see cref="PluginInitContext"/>.

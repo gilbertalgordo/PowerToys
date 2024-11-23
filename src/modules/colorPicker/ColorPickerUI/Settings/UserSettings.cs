@@ -10,6 +10,7 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Text.Json;
 using System.Threading;
+
 using ColorPicker.Common;
 using ManagedCommon;
 using Microsoft.PowerToys.Settings.UI.Library;
@@ -22,7 +23,7 @@ namespace ColorPicker.Settings
     [Export(typeof(IUserSettings))]
     public class UserSettings : IUserSettings
     {
-        private readonly ISettingsUtils _settingsUtils;
+        private readonly SettingsUtils _settingsUtils;
         private const string ColorPickerModuleName = "ColorPicker";
         private const string ColorPickerHistoryFilename = "colorHistory.json";
         private const string DefaultActivationShortcut = "Ctrl + Break";
@@ -32,9 +33,14 @@ namespace ColorPicker.Settings
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0052:Remove unread private members", Justification = "Actually, call back is LoadSettingsFromJson")]
         private readonly IFileSystemWatcher _watcher;
 
-        private readonly object _loadingSettingsLock = new object();
+        private readonly Lock _loadingSettingsLock = new Lock();
 
         private bool _loadingColorsHistory;
+
+        private static readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+        };
 
         [ImportingConstructor]
         public UserSettings(Helpers.IThrottledActionInvoker throttledActionInvoker)
@@ -58,7 +64,7 @@ namespace ColorPicker.Settings
         {
             if (!_loadingColorsHistory)
             {
-                _settingsUtils.SaveSettings(JsonSerializer.Serialize(ColorHistory, new JsonSerializerOptions { WriteIndented = true }), ColorPickerModuleName, ColorPickerHistoryFilename);
+                _settingsUtils.SaveSettings(JsonSerializer.Serialize(ColorHistory, _serializerOptions), ColorPickerModuleName, ColorPickerHistoryFilename);
             }
         }
 

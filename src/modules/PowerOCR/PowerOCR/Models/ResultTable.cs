@@ -10,8 +10,10 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+
 using PowerOCR.Helpers;
 using Windows.Media.Ocr;
+
 using Rect = System.Windows.Rect;
 
 namespace PowerOCR.Models;
@@ -239,7 +241,7 @@ public class ResultTable
         return rowAreas;
     }
 
-    private static void CheckIntersectionsWithWordBorders(int hitGridSpacing, ICollection<WordBorder> wordBorders, ICollection<int> rowAreas, int i, Rect horizontalLineRect)
+    private static void CheckIntersectionsWithWordBorders(int hitGridSpacing, ICollection<WordBorder> wordBorders, List<int> rowAreas, int i, Rect horizontalLineRect)
     {
         foreach (WordBorder wb in wordBorders)
         {

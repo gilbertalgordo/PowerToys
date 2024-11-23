@@ -15,6 +15,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading;
+
 using ManagedCommon;
 using Microsoft.PowerToys.Settings.UI.Library.Utilities;
 
@@ -24,10 +25,15 @@ namespace Microsoft.PowerToys.Settings.UI.Library
     {
         private static SettingsBackupAndRestoreUtils instance;
         private (bool Success, string Severity, bool LastBackupExists, DateTime? LastRan) lastBackupSettingsResults;
-        private static object backupSettingsInternalLock = new object();
-        private static object removeOldBackupsLock = new object();
+        private static Lock backupSettingsInternalLock = new Lock();
+        private static Lock removeOldBackupsLock = new Lock();
 
         public DateTime LastBackupStartTime { get; set; }
+
+        private static readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+        };
 
         private SettingsBackupAndRestoreUtils()
         {
@@ -292,9 +298,9 @@ namespace Microsoft.PowerToys.Settings.UI.Library
                 }
 
                 // get data needed for process
-                var backupRetoreSettings = JsonNode.Parse(GetBackupRestoreSettingsJson());
-                var currentSettingsFiles = GetSettingsFiles(backupRetoreSettings, appBasePath).ToList().ToDictionary(x => x.Substring(appBasePath.Length));
-                var backupSettingsFiles = GetSettingsFiles(backupRetoreSettings, latestSettingsFolder).ToList().ToDictionary(x => x.Substring(latestSettingsFolder.Length));
+                var backupRestoreSettings = JsonNode.Parse(GetBackupRestoreSettingsJson());
+                var currentSettingsFiles = GetSettingsFiles(backupRestoreSettings, appBasePath).ToList().ToDictionary(x => x.Substring(appBasePath.Length));
+                var backupSettingsFiles = GetSettingsFiles(backupRestoreSettings, latestSettingsFolder).ToList().ToDictionary(x => x.Substring(latestSettingsFolder.Length));
 
                 if (backupSettingsFiles.Count == 0)
                 {
@@ -306,21 +312,37 @@ namespace Microsoft.PowerToys.Settings.UI.Library
                 foreach (var currentFile in backupSettingsFiles)
                 {
                     var relativePath = currentFile.Value.Substring(latestSettingsFolder.Length + 1);
-                    var retoreFullPath = Path.Combine(appBasePath, relativePath);
-                    var settingsToRestoreJson = GetExportVersion(backupRetoreSettings, currentFile.Key, currentFile.Value);
+                    var restoreFullPath = Path.Combine(appBasePath, relativePath);
+                    var settingsToRestoreJson = GetExportVersion(backupRestoreSettings, currentFile.Key, currentFile.Value);
 
                     if (currentSettingsFiles.TryGetValue(currentFile.Key, out string value))
                     {
                         // we have a setting file to restore to
-                        var currentSettingsFileJson = GetExportVersion(backupRetoreSettings, currentFile.Key, value);
+                        var currentSettingsFileJson = GetExportVersion(backupRestoreSettings, currentFile.Key, value);
 
                         if (JsonNormalizer.Normalize(settingsToRestoreJson) != JsonNormalizer.Normalize(currentSettingsFileJson))
                         {
                             // the settings file needs to be updated, update the real one with non-excluded stuff...
                             Logger.LogInfo($"Settings file {currentFile.Key} is different and is getting updated from backup");
 
-                            var newCurrentSettingsFile = JsonMergeHelper.Merge(File.ReadAllText(currentSettingsFiles[currentFile.Key]), settingsToRestoreJson);
-                            File.WriteAllText(currentSettingsFiles[currentFile.Key], newCurrentSettingsFile);
+                            // we needed a new "CustomRestoreSettings" for now, to overwrite because some settings don't merge well (like KBM shortcuts)
+                            var overwrite = false;
+                            if (backupRestoreSettings["CustomRestoreSettings"] != null && backupRestoreSettings["CustomRestoreSettings"][currentFile.Key] != null)
+                            {
+                                var customRestoreSettings = backupRestoreSettings["CustomRestoreSettings"][currentFile.Key];
+                                overwrite = customRestoreSettings["overwrite"] != null && (bool)customRestoreSettings["overwrite"];
+                            }
+
+                            if (overwrite)
+                            {
+                                File.WriteAllText(currentSettingsFiles[currentFile.Key], settingsToRestoreJson);
+                            }
+                            else
+                            {
+                                var newCurrentSettingsFile = JsonMergeHelper.Merge(File.ReadAllText(currentSettingsFiles[currentFile.Key]), settingsToRestoreJson);
+                                File.WriteAllText(currentSettingsFiles[currentFile.Key], newCurrentSettingsFile);
+                            }
+
                             anyFilesUpdated = true;
                         }
                     }
@@ -339,7 +361,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
                 if (anyFilesUpdated)
                 {
                     // something was changed do we need to return true to indicate a restart is needed.
-                    var restartAfterRestore = (bool?)backupRetoreSettings!["RestartAfterRestore"];
+                    var restartAfterRestore = (bool?)backupRestoreSettings!["RestartAfterRestore"];
                     if (!restartAfterRestore.HasValue || restartAfterRestore.Value)
                     {
                         return (true, $"RESTART APP", "Success");
@@ -378,7 +400,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             return settingsBackupAndRestoreDir;
         }
 
-        private IList<string> GetBackupSettingsFiles(string settingsBackupAndRestoreDir)
+        private List<string> GetBackupSettingsFiles(string settingsBackupAndRestoreDir)
         {
             return Directory.GetFiles(settingsBackupAndRestoreDir, "settings_*.ptb", SearchOption.TopDirectoryOnly).ToList().Where(f => Regex.IsMatch(f, "settings_(\\d{1,19}).ptb")).ToList();
         }
@@ -639,11 +661,11 @@ namespace Microsoft.PowerToys.Settings.UI.Library
                     }
 
                     // get data needed for process
-                    var backupRetoreSettings = JsonNode.Parse(GetBackupRestoreSettingsJson());
-                    var currentSettingsFiles = GetSettingsFiles(backupRetoreSettings, appBasePath).ToList().ToDictionary(x => x.Substring(appBasePath.Length));
+                    var backupRestoreSettings = JsonNode.Parse(GetBackupRestoreSettingsJson());
+                    var currentSettingsFiles = GetSettingsFiles(backupRestoreSettings, appBasePath).ToList().ToDictionary(x => x.Substring(appBasePath.Length));
                     var fullBackupDir = Path.Combine(Path.GetTempPath(), $"settings_{DateTime.UtcNow.ToFileTimeUtc().ToString(CultureInfo.InvariantCulture)}");
                     var latestSettingsFolder = GetLatestSettingsFolder();
-                    var lastBackupSettingsFiles = GetSettingsFiles(backupRetoreSettings, latestSettingsFolder).ToList().ToDictionary(x => x.Substring(latestSettingsFolder.Length));
+                    var lastBackupSettingsFiles = GetSettingsFiles(backupRestoreSettings, latestSettingsFolder).ToList().ToDictionary(x => x.Substring(latestSettingsFolder.Length));
 
                     lastBackupExists = lastBackupSettingsFiles.Count > 0;
 
@@ -661,13 +683,13 @@ namespace Microsoft.PowerToys.Settings.UI.Library
                         tempFile = currentFile;
 
                         // need to check and back this up;
-                        var currentSettingsFileToBackup = GetExportVersion(backupRetoreSettings, currentFile.Key, currentFile.Value);
+                        var currentSettingsFileToBackup = GetExportVersion(backupRestoreSettings, currentFile.Key, currentFile.Value);
 
                         var doBackup = false;
                         if (lastBackupSettingsFiles.TryGetValue(currentFile.Key, out string value))
                         {
                             // there is a previous backup for this, get an export version of it.
-                            var lastSettingsFileDoc = GetExportVersion(backupRetoreSettings, currentFile.Key, value);
+                            var lastSettingsFileDoc = GetExportVersion(backupRestoreSettings, currentFile.Key, value);
 
                             // check to see if the new export version would be same as last export version.
                             if (JsonNormalizer.Normalize(currentSettingsFileToBackup) != JsonNormalizer.Normalize(lastSettingsFileDoc))
@@ -745,7 +767,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
                         UnchangedFiles = skippedSettingsFiles.Keys.ToList(),
                     };
 
-                    var manifest = JsonSerializer.Serialize(manifestData, new JsonSerializerOptions() { WriteIndented = true });
+                    var manifest = JsonSerializer.Serialize(manifestData, _serializerOptions);
 
                     if (!dryRun)
                     {
@@ -804,9 +826,9 @@ namespace Microsoft.PowerToys.Settings.UI.Library
         /// Method <c>GetExportVersion</c> gets the version of the settings file that we want to backup.
         /// It will be formatted and all problematic settings removed from it.
         /// </summary>
-        public static string GetExportVersion(JsonNode backupRetoreSettings, string settingFileKey, string settingsFileName)
+        public static string GetExportVersion(JsonNode backupRestoreSettings, string settingFileKey, string settingsFileName)
         {
-            var ignoredSettings = GetIgnoredSettings(backupRetoreSettings, settingFileKey);
+            var ignoredSettings = GetIgnoredSettings(backupRestoreSettings, settingFileKey);
             var settingsFile = JsonDocument.Parse(File.ReadAllText(settingsFileName));
 
             var outputBuffer = new ArrayBufferWriter<byte>();
@@ -828,7 +850,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             if (settingFileKey.Equals("\\PowerToys Run\\settings.json", StringComparison.OrdinalIgnoreCase))
             {
                 // PowerToys Run hack fix-up
-                var ptRunIgnoredSettings = GetPTRunIgnoredSettings(backupRetoreSettings);
+                var ptRunIgnoredSettings = GetPTRunIgnoredSettings(backupRestoreSettings);
                 var ptrSettings = JsonNode.Parse(Encoding.UTF8.GetString(outputBuffer.WrittenSpan));
 
                 foreach (JsonObject pluginToChange in ptRunIgnoredSettings)
@@ -856,16 +878,13 @@ namespace Microsoft.PowerToys.Settings.UI.Library
         /// <summary>
         /// Method <c>GetPTRunIgnoredSettings</c> gets the 'Run-Plugin-level' settings we should ignore because they are problematic to backup/restore.
         /// </summary>
-        private static JsonArray GetPTRunIgnoredSettings(JsonNode backupRetoreSettings)
+        private static JsonArray GetPTRunIgnoredSettings(JsonNode backupRestoreSettings)
         {
-            if (backupRetoreSettings == null)
-            {
-                throw new ArgumentNullException(nameof(backupRetoreSettings));
-            }
+            ArgumentNullException.ThrowIfNull(backupRestoreSettings);
 
-            if (backupRetoreSettings["IgnoredPTRunSettings"] != null)
+            if (backupRestoreSettings["IgnoredPTRunSettings"] != null)
             {
-                return (JsonArray)backupRetoreSettings["IgnoredPTRunSettings"];
+                return (JsonArray)backupRestoreSettings["IgnoredPTRunSettings"];
             }
 
             return new JsonArray();
@@ -874,23 +893,20 @@ namespace Microsoft.PowerToys.Settings.UI.Library
         /// <summary>
         /// Method <c>GetIgnoredSettings</c> gets the 'top-level' settings we should ignore because they are problematic to backup/restore.
         /// </summary>
-        private static string[] GetIgnoredSettings(JsonNode backupRetoreSettings, string settingFileKey)
+        private static string[] GetIgnoredSettings(JsonNode backupRestoreSettings, string settingFileKey)
         {
-            if (backupRetoreSettings == null)
-            {
-                throw new ArgumentNullException(nameof(backupRetoreSettings));
-            }
+            ArgumentNullException.ThrowIfNull(backupRestoreSettings);
 
             if (settingFileKey.StartsWith("\\", StringComparison.OrdinalIgnoreCase))
             {
                 settingFileKey = settingFileKey.Substring(1);
             }
 
-            if (backupRetoreSettings["IgnoredSettings"] != null)
+            if (backupRestoreSettings["IgnoredSettings"] != null)
             {
-                if (backupRetoreSettings["IgnoredSettings"][settingFileKey] != null)
+                if (backupRestoreSettings["IgnoredSettings"][settingFileKey] != null)
                 {
-                    var settingsArray = (JsonArray)backupRetoreSettings["IgnoredSettings"][settingFileKey];
+                    var settingsArray = (JsonArray)backupRestoreSettings["IgnoredSettings"][settingFileKey];
 
                     Console.WriteLine("settingsArray " + settingsArray.GetType().FullName);
 
@@ -917,7 +933,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
         /// </summary>
         private static void RemoveOldBackups(string location, int minNumberToKeep, TimeSpan deleteIfOlderThanTs)
         {
-            if (!Monitor.TryEnter(removeOldBackupsLock, 1000))
+            if (!removeOldBackupsLock.TryEnter(1000))
             {
                 return;
             }
@@ -986,7 +1002,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             }
             finally
             {
-                Monitor.Exit(removeOldBackupsLock);
+                removeOldBackupsLock.Exit();
             }
         }
 
@@ -999,7 +1015,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             public static string Normalize(string json)
             {
                 var doc1 = JsonNormalizer.Deserialize(json);
-                var newJson1 = JsonSerializer.Serialize(doc1, new JsonSerializerOptions { WriteIndented = true });
+                var newJson1 = JsonSerializer.Serialize(doc1, _serializerOptions);
                 return newJson1;
             }
 

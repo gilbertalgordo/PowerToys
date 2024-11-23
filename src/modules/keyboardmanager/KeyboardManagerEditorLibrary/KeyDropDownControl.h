@@ -2,6 +2,9 @@
 
 #include <keyboardmanager/common/Shortcut.h>
 
+// Enables the WinUI teaching tip to show as the new warning flyout
+#define USE_NEW_DROPDOWN_WARNING_TIP
+
 namespace KBMEditor
 {
     class KeyboardManagerState;
@@ -38,11 +41,16 @@ private:
     // Stores the previous layout
     HKL previousLayout = 0;
 
+#ifdef USE_NEW_DROPDOWN_WARNING_TIP
+    // Stores the teaching tip attached to the current drop down
+    muxc::TeachingTip warningTip;
+#else
     // Stores the flyout warning message
     winrt::Windows::Foundation::IInspectable warningMessage;
 
     // Stores the flyout attached to the current drop down
     winrt::Windows::Foundation::IInspectable warningFlyout;
+#endif
 
     // Stores whether a key to shortcut warning has to be ignored
     bool ignoreKeyToShortcutWarning;
@@ -55,6 +63,7 @@ private:
 
     // Get selected value of dropdown or -1 if nothing is selected
     static DWORD GetSelectedValue(ComboBox comboBox);
+    static DWORD GetSelectedValue(TextBlock text);
 
     // Function to set accessible name for combobox
     static void SetAccessibleNameForComboBox(ComboBox dropDown, int index);
@@ -102,7 +111,7 @@ public:
     static void AddShortcutToControl(Shortcut shortcut, StackPanel table, VariableSizedWrapGrid parent, KBMEditor::KeyboardManagerState& keyboardManagerState, const int colIndex, std::vector<std::unique_ptr<KeyDropDownControl>>& keyDropDownControlObjects, RemapBuffer& remapBuffer, StackPanel row, TextBox targetApp, bool isHybridControl, bool isSingleKeyWindow);
 
     // Get keys name list depending if Disable is in dropdown
-    static std::vector<std::pair<DWORD,std::wstring>> GetKeyList(bool isShortcut, bool renderDisable);
+    static std::vector<std::pair<DWORD, std::wstring>> GetKeyList(bool isShortcut, bool renderDisable);
 
     // Get number of selected keys. Do not count -1 and 0 values as they stand for Not selected and None
     static int GetNumberOfSelectedKeys(std::vector<int32_t> keys);

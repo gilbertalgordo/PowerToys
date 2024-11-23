@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.Plugin.Folder.Sources;
 using Microsoft.Plugin.Folder.Sources.Result;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -15,8 +16,11 @@ namespace Microsoft.Plugin.Folder.UnitTests
     [TestClass]
     public class DriveOrSharedFolderTests
     {
+        private static readonly string[] DriverNames = new[] { "c:", "d:" };
+
         [DataTestMethod]
         [DataRow(@"\\test-server\testdir", true)]
+        [DataRow(@"//test-server/testdir", true)]
         [DataRow(@"c:", true)]
         [DataRow(@"c:\", true)]
         [DataRow(@"C:\", true)]
@@ -33,7 +37,7 @@ namespace Microsoft.Plugin.Folder.UnitTests
             var driveInformationMock = new Mock<IDriveInformation>();
 
             driveInformationMock.Setup(r => r.GetDriveNames())
-                .Returns(() => new[] { "c:", "d:" });
+                .Returns(() => DriverNames);
 
             var folderLinksMock = new Mock<IFolderLinks>();
             var folderHelper = new FolderHelper(driveInformationMock.Object, folderLinksMock.Object);

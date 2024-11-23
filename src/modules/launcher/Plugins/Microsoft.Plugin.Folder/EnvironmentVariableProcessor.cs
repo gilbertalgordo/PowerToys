@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.Plugin.Folder.Sources;
 using Microsoft.Plugin.Folder.Sources.Result;
 
@@ -23,10 +24,7 @@ namespace Microsoft.Plugin.Folder
 
         public IEnumerable<IItemResult> Results(string actionKeyword, string search)
         {
-            if (search == null)
-            {
-                throw new ArgumentNullException(nameof(search));
-            }
+            ArgumentNullException.ThrowIfNull(search);
 
             if (!_environmentHelper.IsEnvironmentVariable(search))
             {

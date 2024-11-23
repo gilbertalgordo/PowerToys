@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.IO.Abstractions;
 using System.Text.Json;
+
 using ManagedCommon;
 using Microsoft.PowerToys.Settings.UI.Library.Interfaces;
 
@@ -17,6 +18,12 @@ namespace Microsoft.PowerToys.Settings.UI.Library
         private const string DefaultModuleName = "";
         private readonly IFile _file;
         private readonly ISettingsPath _settingsPath;
+
+        private static readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions
+        {
+            MaxDepth = 0,
+            IncludeFields = true,
+        };
 
         public SettingsUtils()
             : this(new FileSystem())
@@ -151,7 +158,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             // The file itself did write the content correctly but something is off with the actual end of the file, hence the 0x00 bug
             var jsonSettingsString = _file.ReadAllText(_settingsPath.GetSettingsPath(powertoyFolderName, fileName)).Trim('\0');
 
-            var options = new JsonSerializerOptions { MaxDepth = 0, IncludeFields = true };
+            var options = _serializerOptions;
             return JsonSerializer.Deserialize<T>(jsonSettingsString, options);
         }
 

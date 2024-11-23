@@ -5,6 +5,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Settings.UI.Library.Attributes;
+
 namespace Microsoft.PowerToys.Settings.UI.Library
 {
     public class FZConfigProperties
@@ -27,7 +29,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             FancyzonesMoveWindowsAcrossMonitors = new BoolProperty();
             FancyzonesMoveWindowsBasedOnPosition = new BoolProperty();
             FancyzonesOverlappingZonesAlgorithm = new IntProperty();
-            FancyzonesDisplayChangeMoveWindows = new BoolProperty();
+            FancyzonesDisplayOrWorkAreaChangeMoveWindows = new BoolProperty(ConfigDefaults.DefaultFancyzonesDisplayOrWorkAreaChangeMoveWindows);
             FancyzonesZoneSetChangeMoveWindows = new BoolProperty();
             FancyzonesAppLastZoneMoveWindows = new BoolProperty();
             FancyzonesOpenWindowOnActiveMonitor = new BoolProperty();
@@ -76,8 +78,8 @@ namespace Microsoft.PowerToys.Settings.UI.Library
         [JsonPropertyName("fancyzones_overlappingZonesAlgorithm")]
         public IntProperty FancyzonesOverlappingZonesAlgorithm { get; set; }
 
-        [JsonPropertyName("fancyzones_displayChange_moveWindows")]
-        public BoolProperty FancyzonesDisplayChangeMoveWindows { get; set; }
+        [JsonPropertyName("fancyzones_displayOrWorkAreaChange_moveWindows")]
+        public BoolProperty FancyzonesDisplayOrWorkAreaChangeMoveWindows { get; set; }
 
         [JsonPropertyName("fancyzones_zoneSetChange_moveWindows")]
         public BoolProperty FancyzonesZoneSetChangeMoveWindows { get; set; }
@@ -110,6 +112,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
         public BoolProperty FancyzonesMakeDraggedWindowTransparent { get; set; }
 
         [JsonPropertyName("fancyzones_allowPopupWindowSnap")]
+        [CmdConfigureIgnore]
         public BoolProperty FancyzonesAllowPopupWindowSnap { get; set; }
 
         [JsonPropertyName("fancyzones_allowChildWindowSnap")]

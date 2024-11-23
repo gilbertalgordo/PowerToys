@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -30,5 +31,13 @@ namespace Microsoft.PowerToys.Settings.UI.Controls
         }
 
         public static readonly DependencyProperty IsErrorProperty = DependencyProperty.Register("IsError", typeof(bool), typeof(ShortcutDialogContentControl), new PropertyMetadata(false));
+
+        public bool IsWarningAltGr
+        {
+            get => (bool)GetValue(IsWarningAltGrProperty);
+            set => SetValue(IsWarningAltGrProperty, value);
+        }
+
+        public static readonly DependencyProperty IsWarningAltGrProperty = DependencyProperty.Register("IsWarningAltGr", typeof(bool), typeof(ShortcutDialogContentControl), new PropertyMetadata(false));
     }
 }

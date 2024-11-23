@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows.Forms;
+
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
@@ -20,12 +21,12 @@ namespace Common
         /// <summary>
         /// WebView2 Control to display Svg.
         /// </summary>
-        private WebView2 _browser;
+        private WebView2? _browser;
 
         /// <summary>
         /// WebView2 Environment
         /// </summary>
-        private CoreWebView2Environment _webView2Environment;
+        private CoreWebView2Environment? _webView2Environment;
 
         /// <summary>
         /// Name of the virtual host
@@ -38,7 +39,7 @@ namespace Common
         /// <remarks>
         /// Source: https://stackoverflow.com/a/283917/14774889
         /// </remarks>
-        public static string AssemblyDirectory
+        public static string? AssemblyDirectory
         {
             get
             {
@@ -60,7 +61,7 @@ namespace Common
             _browser = new WebView2();
             _browser.Dock = DockStyle.Fill;
             _browser.Visible = true;
-            _browser.NavigationCompleted += (object sender, CoreWebView2NavigationCompletedEventArgs args) =>
+            _browser.NavigationCompleted += (object? sender, CoreWebView2NavigationCompletedEventArgs args) =>
             {
                 // Put here logic needed after WebView2 control is done navigating to url/page
             };
@@ -83,7 +84,7 @@ namespace Common
                     _browser.NavigateToString("Test");
 
                     // Or navigate to Uri
-                    _browser.Source = new Uri(filePath);
+                    _browser.Source = new Uri(filePath!);
                 }
                 catch (NullReferenceException)
                 {

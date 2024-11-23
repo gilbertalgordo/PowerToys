@@ -5,8 +5,10 @@
 using System;
 using System.IO;
 using System.Reflection;
+
 using Microsoft.Plugin.Program.Logger;
 using Windows.Foundation.Metadata;
+
 using Package = Windows.ApplicationModel.Package;
 
 namespace Microsoft.Plugin.Program.Programs
@@ -44,10 +46,7 @@ namespace Microsoft.Plugin.Program.Programs
 
         public static PackageWrapper GetWrapperFromPackage(Package package)
         {
-            if (package == null)
-            {
-                throw new ArgumentNullException(nameof(package));
-            }
+            ArgumentNullException.ThrowIfNull(package);
 
             string path;
             try

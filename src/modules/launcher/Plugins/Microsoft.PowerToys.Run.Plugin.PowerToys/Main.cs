@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.PowerToys.Run.Plugin.PowerToys.Components;
 using Microsoft.PowerToys.Run.Plugin.PowerToys.Properties;
 using Wox.Infrastructure;
@@ -20,6 +21,8 @@ namespace Microsoft.PowerToys.Run.Plugin.PowerToys
         public string Name => Resources.Plugin_Name;
 
         public string Description => Resources.Plugin_Description;
+
+        public static string PluginID => "29DD65DB28C84A37BDEF1D2B43DA368B";
 
         public string GetTranslatedPluginTitle() => Resources.Plugin_Name;
 

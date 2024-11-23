@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
 using ManagedCommon;
 using Microsoft.PowerToys.Run.Plugin.Registry.Classes;
 using Microsoft.PowerToys.Run.Plugin.Registry.Helper;
@@ -45,6 +46,8 @@ namespace Microsoft.PowerToys.Run.Plugin.Registry
         public string Name => Resources.PluginTitle;
 
         public string Description => Resources.PluginDescription;
+
+        public static string PluginID => "303417D927BF4C97BCFFC78A123BE0C8";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Main"/> class.

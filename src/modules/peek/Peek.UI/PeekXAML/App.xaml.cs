@@ -3,30 +3,37 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+
 using ManagedCommon;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.PowerToys.Telemetry;
 using Microsoft.UI.Xaml;
+using Peek.Common;
 using Peek.FilePreviewer;
+using Peek.FilePreviewer.Models;
+using Peek.UI.Native;
 using Peek.UI.Telemetry.Events;
 using Peek.UI.Views;
+using PowerToys.Interop;
 
 namespace Peek.UI
 {
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.
     /// </summary>
-    public partial class App : Application
+    public partial class App : Application, IApp
     {
         public static int PowerToysPID { get; set; }
+
+        public ETWTrace EtwTrace { get; private set; } = new ETWTrace();
 
         public IHost Host
         {
             get;
         }
 
-        private Window? Window { get; set; }
+        private MainWindow? Window { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="App"/> class.
@@ -35,6 +42,12 @@ namespace Peek.UI
         /// </summary>
         public App()
         {
+            string appLanguage = LanguageHelper.LoadLanguage();
+            if (!string.IsNullOrEmpty(appLanguage))
+            {
+                Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = appLanguage;
+            }
+
             InitializeComponent();
             Logger.InitializeLogger("\\Peek\\Logs");
 
@@ -46,6 +59,7 @@ namespace Peek.UI
                 // Core Services
                 services.AddTransient<NeighboringItemsQuery>();
                 services.AddSingleton<IUserSettings, UserSettings>();
+                services.AddSingleton<IPreviewSettings, PreviewSettings>();
 
                 // Views and ViewModels
                 services.AddTransient<TitleBar>();
@@ -57,7 +71,7 @@ namespace Peek.UI
             UnhandledException += App_UnhandledException;
         }
 
-        public static T GetService<T>()
+        public T GetService<T>()
             where T : class
         {
             if ((App.Current as App)!.Host.Services.GetService(typeof(T)) is not T service)
@@ -84,21 +98,47 @@ namespace Peek.UI
             var cmdArgs = Environment.GetCommandLineArgs();
             if (cmdArgs?.Length > 1)
             {
-                if (int.TryParse(cmdArgs[cmdArgs.Length - 1], out int powerToysRunnerPid))
+                if (int.TryParse(cmdArgs[^1], out int powerToysRunnerPid))
                 {
                     RunnerHelper.WaitForPowerToysRunner(powerToysRunnerPid, () =>
                     {
+                        EtwTrace?.Dispose();
                         Environment.Exit(0);
                     });
                 }
             }
 
-            Window = new MainWindow();
+            NativeEventWaiter.WaitForEventLoop(Constants.ShowPeekEvent(), OnPeekHotkey);
+            NativeEventWaiter.WaitForEventLoop(Constants.TerminatePeekEvent(), () =>
+            {
+                EtwTrace?.Dispose();
+                Environment.Exit(0);
+            });
         }
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             PowerToysTelemetry.Log.WriteEvent(new ErrorEvent() { HResult = (Common.Models.HResult)e.Exception.HResult, Failure = ErrorEvent.FailureType.AppCrash });
+        }
+
+        /// <summary>
+        /// Handle Peek hotkey
+        /// </summary>
+        private void OnPeekHotkey()
+        {
+            // Need to read the foreground HWND before activating Peek to avoid focus stealing
+            // Foreground HWND must always be Explorer or Desktop
+            var foregroundWindowHandle = Windows.Win32.PInvoke.GetForegroundWindow();
+
+            bool firstActivation = false;
+
+            if (Window == null)
+            {
+                firstActivation = true;
+                Window = new MainWindow();
+            }
+
+            Window.Toggle(firstActivation, foregroundWindowHandle);
         }
     }
 }

@@ -4,11 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+
 using ManagedCommon;
 using Microsoft.Plugin.Uri.UriHelper;
 using Wox.Infrastructure;
 using Wox.Infrastructure.Storage;
 using Wox.Plugin;
+
 using BrowserInfo = Wox.Plugin.Common.DefaultBrowserInfo;
 
 namespace Microsoft.Plugin.Uri
@@ -36,6 +38,8 @@ namespace Microsoft.Plugin.Uri
         public string Name => Properties.Resources.Microsoft_plugin_uri_plugin_name;
 
         public string Description => Properties.Resources.Microsoft_plugin_uri_plugin_description;
+
+        public static string PluginID => "03276A39D4E9417C8FFD200B0EE5E871";
 
         public List<ContextMenuResult> LoadContextMenus(Result selectedResult)
         {

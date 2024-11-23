@@ -12,6 +12,7 @@
 #include <common/interop/shared_constants.h>
 #include <common/utils/logger_helper.h>
 #include <common/utils/winapi_error.h>
+#include <common/utils/package.h>
 
 BOOL APIENTRY DllMain(HMODULE /*hModule*/,
                       DWORD ul_reason_for_call,
@@ -68,6 +69,8 @@ private:
 
     // Handle to event used to invoke PowerOCR
     HANDLE m_hInvokeEvent;
+    // Handle to event used to terminate PowerOCR
+    HANDLE m_hTerminateEvent;
 
     void parse_hotkey(PowerToysSettings::PowerToyValues& settings)
     {
@@ -159,6 +162,7 @@ public:
         app_key = PowerOcrConstants::ModuleKey;
         LoggerHelpers::init_logger(app_key, L"ModuleInterface", "TextExtractor");
         m_hInvokeEvent = CreateDefaultEvent(CommonSharedConstants::SHOW_POWEROCR_SHARED_EVENT);
+        m_hTerminateEvent = CreateDefaultEvent(CommonSharedConstants::TERMINATE_POWEROCR_SHARED_EVENT);
         init_settings();
     }
 
@@ -248,6 +252,8 @@ public:
         if (m_enabled)
         {
             ResetEvent(m_hInvokeEvent);
+            SetEvent(m_hTerminateEvent);
+            WaitForSingleObject(m_hProcess, 1500);
             TerminateProcess(m_hProcess, 1);
         }
 
@@ -292,6 +298,13 @@ public:
     virtual bool is_enabled() override
     {
         return m_enabled;
+    }
+
+    // Returns whether the PowerToys should be enabled by default
+    virtual bool is_enabled_by_default() const override
+    {
+        // disabled by default for Windows 11 and enabled by default on Windows 10
+        return !package::IsWin11OrGreater();
     }
 };
 

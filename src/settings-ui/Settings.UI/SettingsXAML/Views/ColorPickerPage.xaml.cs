@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Input;
+
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.PowerToys.Settings.UI.Helpers;
 using Microsoft.PowerToys.Settings.UI.Library;
@@ -63,7 +64,8 @@ namespace Microsoft.PowerToys.Settings.UI.Views
             var index = ViewModel.ColorFormats.IndexOf(color);
             if (index > 0)
             {
-                ViewModel.ColorFormats.Move(index, index - 1);
+                ViewModel.ColorFormats.Move(index, --index);
+                SetColorFormatsFocus(index);
             }
         }
 
@@ -78,7 +80,8 @@ namespace Microsoft.PowerToys.Settings.UI.Views
             var index = ViewModel.ColorFormats.IndexOf(color);
             if (index < ViewModel.ColorFormats.Count - 1)
             {
-                ViewModel.ColorFormats.Move(index, index + 1);
+                ViewModel.ColorFormats.Move(index, ++index);
+                SetColorFormatsFocus(index);
             }
         }
 
@@ -95,7 +98,8 @@ namespace Microsoft.PowerToys.Settings.UI.Views
             dialog.Content = new TextBlock() { Text = resourceLoader.GetString("Delete_Dialog_Description") };
             dialog.PrimaryButtonClick += (s, args) =>
             {
-                ViewModel.DeleteModel(color);
+                var deleteIndex = ViewModel.DeleteModel(color);
+                SetColorFormatsFocus(deleteIndex < ViewModel.ColorFormats.Count ? deleteIndex : ViewModel.ColorFormats.Count - 1);
             };
             var result = await dialog.ShowAsync();
         }
@@ -105,6 +109,7 @@ namespace Microsoft.PowerToys.Settings.UI.Views
             ColorFormatModel newColorFormat = ColorFormatDialog.DataContext as ColorFormatModel;
             ViewModel.AddNewColorFormat(newColorFormat.Name, newColorFormat.Format, true);
             ColorFormatDialog.Hide();
+            SetColorFormatsFocus(0);
         }
 
         private void Update()
@@ -112,7 +117,6 @@ namespace Microsoft.PowerToys.Settings.UI.Views
             ColorFormatModel colorFormat = ColorFormatDialog.DataContext as ColorFormatModel;
             string oldName = ((KeyValuePair<string, string>)ColorFormatDialog.Tag).Key;
             ViewModel.UpdateColorFormat(oldName, colorFormat);
-            ColorFormatDialog.Hide();
         }
 
         private async void NewFormatClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -125,19 +129,6 @@ namespace Microsoft.PowerToys.Settings.UI.Views
             ColorFormatDialog.PrimaryButtonText = resourceLoader.GetString("ColorFormatSave");
             ColorFormatDialog.PrimaryButtonCommand = AddCommand;
             await ColorFormatDialog.ShowAsync();
-        }
-
-        private void ColorFormatDialog_CancelButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-        {
-            if (ColorFormatDialog.Tag is KeyValuePair<string, string>)
-            {
-                ColorFormatModel modifiedColorFormat = ColorFormatDialog.DataContext as ColorFormatModel;
-                KeyValuePair<string, string> oldProperties = (KeyValuePair<string, string>)ColorFormatDialog.Tag;
-                modifiedColorFormat.Name = oldProperties.Key;
-                modifiedColorFormat.Format = oldProperties.Value;
-            }
-
-            ColorFormatDialog.Hide();
         }
 
         private async void EditButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -161,6 +152,24 @@ namespace Microsoft.PowerToys.Settings.UI.Views
         public void RefreshEnabledState()
         {
             ViewModel.RefreshEnabledState();
+        }
+
+        private void ColorFormatDialog_Closed(ContentDialog sender, ContentDialogClosedEventArgs args)
+        {
+            if (args.Result != ContentDialogResult.Primary && ColorFormatDialog.Tag is KeyValuePair<string, string>)
+            {
+                ColorFormatModel modifiedColorFormat = ColorFormatDialog.DataContext as ColorFormatModel;
+                KeyValuePair<string, string> oldProperties = (KeyValuePair<string, string>)ColorFormatDialog.Tag;
+                modifiedColorFormat.Name = oldProperties.Key;
+                modifiedColorFormat.Format = oldProperties.Value;
+            }
+        }
+
+        private void SetColorFormatsFocus(int index)
+        {
+            ColorFormats.UpdateLayout();
+            var colorFormat = ColorFormats.ContainerFromIndex(index) as ContentPresenter;
+            colorFormat.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
         }
     }
 }

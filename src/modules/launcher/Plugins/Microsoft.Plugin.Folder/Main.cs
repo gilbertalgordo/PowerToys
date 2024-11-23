@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Windows.Controls;
+
 using ManagedCommon;
 using Microsoft.Plugin.Folder.Sources;
 using Wox.Infrastructure.Storage;
@@ -37,12 +38,14 @@ namespace Microsoft.Plugin.Folder
         };
 
         private static PluginInitContext _context;
-        private IContextMenu _contextMenuLoader;
+        private ContextMenuLoader _contextMenuLoader;
         private bool _disposed;
 
         public string Name => Properties.Resources.wox_plugin_folder_plugin_name;
 
         public string Description => Properties.Resources.wox_plugin_folder_plugin_description;
+
+        public static string PluginID => "B4D3B69656E14D44865C8D818EAE47C4";
 
         public void Save()
         {
@@ -56,10 +59,7 @@ namespace Microsoft.Plugin.Folder
 
         public List<Result> Query(Query query)
         {
-            if (query == null)
-            {
-                throw new ArgumentNullException(paramName: nameof(query));
-            }
+            ArgumentNullException.ThrowIfNull(query);
 
             var expandedName = FolderHelper.Expand(query.Search);
 
@@ -80,10 +80,7 @@ namespace Microsoft.Plugin.Folder
 
         public static IEnumerable<Result> GetFolderPluginResults(Query query)
         {
-            if (query == null)
-            {
-                throw new ArgumentNullException(paramName: nameof(query));
-            }
+            ArgumentNullException.ThrowIfNull(query);
 
             var expandedName = FolderHelper.Expand(query.Search);
 

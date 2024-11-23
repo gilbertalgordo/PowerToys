@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
 using Wox.Plugin.Logger;
 
 namespace Microsoft.PowerToys.Run.Plugin.WindowsSettings.Helper
@@ -21,6 +22,10 @@ namespace Microsoft.PowerToys.Run.Plugin.WindowsSettings.Helper
         /// The name of the file that contains all settings for the query
         /// </summary>
         private const string _settingsFile = "WindowsSettings.json";
+
+        private static readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions
+        {
+        };
 
         /// <summary>
         /// Read all possible Windows settings.
@@ -42,7 +47,7 @@ namespace Microsoft.PowerToys.Run.Plugin.WindowsSettings.Helper
                     throw new ArgumentNullException(nameof(stream), "stream is null");
                 }
 
-                var options = new JsonSerializerOptions();
+                var options = _serializerOptions;
                 options.Converters.Add(new JsonStringEnumConverter());
 
                 using var reader = new StreamReader(stream);

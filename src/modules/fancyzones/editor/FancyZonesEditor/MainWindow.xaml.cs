@@ -6,12 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+
 using Common.UI;
 using FancyZonesEditor.Models;
 using FancyZonesEditor.Utils;
@@ -35,6 +37,10 @@ namespace FancyZonesEditor
         private TextBlock _createLayoutAnnounce;
 
         private bool haveTriedToGetFocusAlready;
+
+        private static readonly CompositeFormat EditTemplate = System.Text.CompositeFormat.Parse(Properties.Resources.Edit_Template);
+        private static readonly CompositeFormat PixelValue = System.Text.CompositeFormat.Parse(Properties.Resources.Pixel_Value);
+        private static readonly CompositeFormat TemplateZoneCountValue = System.Text.CompositeFormat.Parse(Properties.Resources.Template_Zone_Count_Value);
 
         public int WrapPanelItemSize { get; set; } = DefaultWrapPanelItemSize;
 
@@ -207,7 +213,7 @@ namespace FancyZonesEditor
             foreach (LayoutModel customModel in MainWindowSettingsModel.CustomModels)
             {
                 string name = customModel.Name;
-                if (name.StartsWith(defaultNamePrefix, StringComparison.CurrentCulture))
+                if (name != null && name.StartsWith(defaultNamePrefix, StringComparison.CurrentCulture))
                 {
                     if (int.TryParse(name.AsSpan(defaultNamePrefix.Length), out int i))
                     {
@@ -335,7 +341,7 @@ namespace FancyZonesEditor
             App.Overlay.StartEditing(_settings.SelectedModel);
 
             Keyboard.ClearFocus();
-            EditLayoutDialogTitle.Text = string.Format(CultureInfo.CurrentCulture, Properties.Resources.Edit_Template, ((LayoutModel)dataContext).Name);
+            EditLayoutDialogTitle.Text = string.Format(CultureInfo.CurrentCulture, EditTemplate, ((LayoutModel)dataContext).Name);
             await EditLayoutDialog.ShowAsync();
         }
 
@@ -567,7 +573,7 @@ namespace FancyZonesEditor
                     FrameworkElementAutomationPeer.FromElement(SensitivityInput) as SliderAutomationPeer;
                 string activityId = "sliderValueChanged";
 
-                string value = string.Format(CultureInfo.CurrentCulture, Properties.Resources.Pixel_Value, SensitivityInput.Value);
+                string value = string.Format(CultureInfo.CurrentCulture, PixelValue, SensitivityInput.Value);
 
                 if (peer != null && value != null)
                 {
@@ -588,7 +594,7 @@ namespace FancyZonesEditor
                     FrameworkElementAutomationPeer.FromElement(TemplateZoneCount) as SliderAutomationPeer;
                 string activityId = "templateZoneCountValueChanged";
 
-                string value = string.Format(CultureInfo.CurrentCulture, Properties.Resources.Template_Zone_Count_Value, TemplateZoneCount.Value);
+                string value = string.Format(CultureInfo.CurrentCulture, TemplateZoneCountValue, TemplateZoneCount.Value);
 
                 if (peer != null && value != null)
                 {
@@ -609,7 +615,7 @@ namespace FancyZonesEditor
                     FrameworkElementAutomationPeer.FromElement(Spacing) as SliderAutomationPeer;
                 string activityId = "spacingValueChanged";
 
-                string value = string.Format(CultureInfo.CurrentCulture, Properties.Resources.Pixel_Value, Spacing.Value);
+                string value = string.Format(CultureInfo.CurrentCulture, PixelValue, Spacing.Value);
 
                 if (peer != null && value != null)
                 {

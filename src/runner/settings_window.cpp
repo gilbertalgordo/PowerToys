@@ -6,6 +6,7 @@
 
 #include "powertoy_module.h"
 #include <common/interop/two_way_pipe_message_ipc.h>
+#include <common/interop/shared_constants.h>
 #include "tray_icon.h"
 #include "general_settings.h"
 #include "restart_elevated.h"
@@ -34,6 +35,7 @@ TwoWayPipeMessageIPC* current_settings_ipc = NULL;
 std::mutex ipc_mutex;
 std::atomic_bool g_isLaunchInProgress = false;
 std::atomic_bool isUpdateCheckThreadRunning = false;
+HANDLE g_terminateSettingsEvent = CreateEventW(nullptr, false, false, CommonSharedConstants::TERMINATE_SETTINGS_SHARED_EVENT);
 
 json::JsonObject get_power_toys_settings()
 {
@@ -232,6 +234,12 @@ void dispatch_received_json(const std::wstring& json_to_parse)
             {
                 SendMessageW(pt_main_window, WM_CLOSE, 0, 0);
             }
+        }
+        else if (name == L"language")
+        {
+            constexpr const wchar_t* language_filename = L"\\language.json";
+            const std::wstring save_file_location = PTSettingsHelper::get_root_save_folder_location() + language_filename;
+            json::to_file(save_file_location, j);
         }
     }
     return;
@@ -596,7 +604,7 @@ void open_settings_window(std::optional<std::wstring> settings_window, bool show
                 }
                 else
                 {
-                    current_settings_ipc->send(L"{\"ShowYourself\":\"Overview\"}");
+                    current_settings_ipc->send(L"{\"ShowYourself\":\"Dashboard\"}");
                 }
             }
         }
@@ -616,10 +624,12 @@ void close_settings_window()
 {
     if (g_settings_process_id != 0)
     {
-        HANDLE proc = OpenProcess(PROCESS_TERMINATE, false, g_settings_process_id);
-        if (proc != INVALID_HANDLE_VALUE)
+        SetEvent(g_terminateSettingsEvent);
+        wil::unique_handle proc{ OpenProcess(PROCESS_ALL_ACCESS, false, g_settings_process_id) };
+        if (proc)
         {
-            TerminateProcess(proc, 0);
+            WaitForSingleObject(proc.get(), 1500);
+            TerminateProcess(proc.get(), 0);
         }
     }
 }
@@ -671,11 +681,21 @@ std::string ESettingsWindowNames_to_string(ESettingsWindowNames value)
     case ESettingsWindowNames::MeasureTool:
         return "MeasureTool";
     case ESettingsWindowNames::PowerOCR:
-        return "PowerOCR";
+        return "PowerOcr";
+    case ESettingsWindowNames::Workspaces:
+        return "Workspaces";
     case ESettingsWindowNames::RegistryPreview:
         return "RegistryPreview";
     case ESettingsWindowNames::CropAndLock:
         return "CropAndLock";
+    case ESettingsWindowNames::EnvironmentVariables:
+        return "EnvironmentVariables";
+    case ESettingsWindowNames::Dashboard:
+        return "Dashboard";
+    case ESettingsWindowNames::AdvancedPaste:
+        return "AdvancedPaste";
+    case ESettingsWindowNames::NewPlus:
+        return "NewPlus";
     default:
     {
         Logger::error(L"Can't convert ESettingsWindowNames value={} to string", static_cast<int>(value));
@@ -743,9 +763,13 @@ ESettingsWindowNames ESettingsWindowNames_from_string(std::string value)
     {
         return ESettingsWindowNames::MeasureTool;
     }
-    else if (value == "PowerOCR")
+    else if (value == "PowerOcr")
     {
         return ESettingsWindowNames::PowerOCR;
+    }
+    else if (value == "Workspaces")
+    {
+        return ESettingsWindowNames::Workspaces;
     }
     else if (value == "RegistryPreview")
     {
@@ -755,11 +779,27 @@ ESettingsWindowNames ESettingsWindowNames_from_string(std::string value)
     {
         return ESettingsWindowNames::CropAndLock;
     }
+    else if (value == "EnvironmentVariables")
+    {
+        return ESettingsWindowNames::EnvironmentVariables;
+    }
+    else if (value == "Dashboard")
+    {
+        return ESettingsWindowNames::Dashboard;
+    }
+    else if (value == "AdvancedPaste")
+    {
+        return ESettingsWindowNames::AdvancedPaste;
+    }
+    else if (value == "NewPlus")
+    {
+        return ESettingsWindowNames::NewPlus;
+    }
     else
     {
         Logger::error(L"Can't convert string value={} to ESettingsWindowNames", winrt::to_hstring(value));
         assert(false);
     }
 
-    return ESettingsWindowNames::Overview;
+    return ESettingsWindowNames::Dashboard;
 }

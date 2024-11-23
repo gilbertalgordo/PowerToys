@@ -15,27 +15,12 @@
 namespace NonLocalizable
 {
     const wchar_t PowerToysAppFZEditor[] = L"POWERTOYS.FANCYZONESEDITOR.EXE";
-    const wchar_t SplashClassName[] = L"MsoSplash";
+    const wchar_t PowerToysWorkspacesEditor[] = L"POWERTOYS.WORKSPACESEDITOR.EXE";
+    const char SplashClassName[] = "MsoSplash";
     const wchar_t CoreWindow[] = L"Windows.UI.Core.CoreWindow";
     const wchar_t SearchUI[] = L"SearchUI.exe";
     const wchar_t SystemAppsFolder[] = L"SYSTEMAPPS";
 }
-
-// Placeholder enums since dwmapi.h doesn't have these until SDK 22000.
-// TODO: Remove once SDK targets 22000 or above.
-enum DWMWINDOWATTRIBUTE_CUSTOM
-{
-    DWMWA_WINDOW_CORNER_PREFERENCE = 33
-
-};
-
-enum DWM_WINDOW_CORNER_PREFERENCE
-{
-    DWMWCP_DEFAULT = 0,
-    DWMWCP_DONOTROUND = 1,
-    DWMWCP_ROUND = 2,
-    DWMWCP_ROUNDSMALL = 3
-};
 
 namespace
 {
@@ -122,17 +107,6 @@ namespace
     }
 }
 
-bool FancyZonesWindowUtils::IsSplashScreen(HWND window)
-{
-    wchar_t className[MAX_PATH];
-    if (GetClassName(window, className, MAX_PATH) == 0)
-    {
-        return false;
-    }
-
-    return wcscmp(NonLocalizable::SplashClassName, className) == 0;
-}
-
 bool FancyZonesWindowUtils::IsWindowMaximized(HWND window) noexcept
 {
     WINDOWPLACEMENT placement{};
@@ -164,116 +138,34 @@ bool FancyZonesWindowUtils::HasVisibleOwner(HWND window) noexcept
     return rect.top != rect.bottom && rect.left != rect.right;
 }
 
-bool FancyZonesWindowUtils::IsStandardWindow(HWND window)
+bool FancyZonesWindowUtils::IsRoot(HWND window) noexcept
 {
-    if (GetAncestor(window, GA_ROOT) != window)
-    {
-        return false;
-    }
-
-    auto style = GetWindowLong(window, GWL_STYLE);
-    auto exStyle = GetWindowLong(window, GWL_EXSTYLE);
-
-    bool isToolWindow = (exStyle & WS_EX_TOOLWINDOW) == WS_EX_TOOLWINDOW;
-    bool isVisible = (style & WS_VISIBLE) == WS_VISIBLE;
-    if (isToolWindow || !isVisible)
-    {
-        return false;
-    }
-
-    std::array<char, 256> class_name;
-    GetClassNameA(window, class_name.data(), static_cast<int>(class_name.size()));
-    if (is_system_window(window, class_name.data()))
-    {
-        return false;
-    }
-
-    return true;
+    return GetAncestor(window, GA_ROOT) == window;
 }
 
-bool FancyZonesWindowUtils::IsPopupWindow(HWND window) noexcept
+bool FancyZonesWindowUtils::IsExcluded(HWND window)
 {
-    auto style = GetWindowLong(window, GWL_STYLE);
-    return ((style & WS_POPUP) == WS_POPUP);
-}
-
-bool FancyZonesWindowUtils::HasThickFrameAndMinimizeMaximizeButtons(HWND window) noexcept
-{
-    auto style = GetWindowLong(window, GWL_STYLE);
-    return ((style & WS_THICKFRAME) == WS_THICKFRAME && (style & WS_MINIMIZEBOX) == WS_MINIMIZEBOX && (style & WS_MAXIMIZEBOX) == WS_MAXIMIZEBOX);
-}
-
-bool FancyZonesWindowUtils::IsCandidateForZoning(HWND window)
-{
-    bool isStandard = IsStandardWindow(window);
-    if (!isStandard)
-    {
-        return false;
-    }
-
-    // popup could be the window we don't want to snap: start menu, notification popup, tray window, etc.
-    // also, popup could be the windows we want to snap disregarding the "allowSnapPopupWindows" setting, e.g. Telegram
-    bool isPopup = IsPopupWindow(window);
-    if (isPopup && !HasThickFrameAndMinimizeMaximizeButtons(window) && !FancyZonesSettings::settings().allowSnapPopupWindows)
-    {
-        return false;
-    }
-
-    // allow child windows
-    auto hasOwner = HasVisibleOwner(window);
-    if (hasOwner && !FancyZonesSettings::settings().allowSnapChildWindows)
-    {
-        return false;
-    }
-
     std::wstring processPath = get_process_path_waiting_uwp(window);
     CharUpperBuffW(const_cast<std::wstring&>(processPath).data(), static_cast<DWORD>(processPath.length()));
     if (IsExcludedByUser(window, processPath))
     {
-        return false;
+        return true;
     }
 
     if (IsExcludedByDefault(window, processPath))
     {
-        return false;
+        return true;
     }
 
-    return true;
-}
-
-bool FancyZonesWindowUtils::IsProcessOfWindowElevated(HWND window)
-{
-    DWORD pid = 0;
-    GetWindowThreadProcessId(window, &pid);
-    if (!pid)
-    {
-        return false;
-    }
-
-    wil::unique_handle hProcess{ OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION,
-                                             FALSE,
-                                             pid) };
-
-    wil::unique_handle token;
-
-    if (OpenProcessToken(hProcess.get(), TOKEN_QUERY, &token))
-    {
-        TOKEN_ELEVATION elevation;
-        DWORD size;
-        if (GetTokenInformation(token.get(), TokenElevation, &elevation, sizeof(elevation), &size))
-        {
-            return elevation.TokenIsElevated != 0;
-        }
-    }
     return false;
 }
 
-bool FancyZonesWindowUtils::IsExcludedByUser(const HWND& hwnd, std::wstring& processPath) noexcept
+bool FancyZonesWindowUtils::IsExcludedByUser(const HWND& hwnd, const std::wstring& processPath) noexcept
 {
     return (check_excluded_app(hwnd, processPath, FancyZonesSettings::settings().excludedAppsArray));
 }
 
-bool FancyZonesWindowUtils::IsExcludedByDefault(const HWND& hwnd, std::wstring& processPath) noexcept
+bool FancyZonesWindowUtils::IsExcludedByDefault(const HWND& hwnd, const std::wstring& processPath) noexcept
 {
     static std::vector<std::wstring> defaultExcludedFolders = { NonLocalizable::SystemAppsFolder };
     if (find_folder_in_path(processPath, defaultExcludedFolders))
@@ -281,7 +173,19 @@ bool FancyZonesWindowUtils::IsExcludedByDefault(const HWND& hwnd, std::wstring& 
         return true;
     }
 
-    static std::vector<std::wstring> defaultExcludedApps = { NonLocalizable::PowerToysAppFZEditor, NonLocalizable::CoreWindow, NonLocalizable::SearchUI };
+    std::array<char, 256> className;
+    GetClassNameA(hwnd, className.data(), static_cast<int>(className.size()));
+    if (is_system_window(hwnd, className.data()))
+    {
+        return true;
+    }
+
+    if (strcmp(NonLocalizable::SplashClassName, className.data()) == 0)
+    {
+        return true;
+    }
+
+    static std::vector<std::wstring> defaultExcludedApps = { NonLocalizable::PowerToysAppFZEditor, NonLocalizable::PowerToysWorkspacesEditor, NonLocalizable::CoreWindow, NonLocalizable::SearchUI };
     return (check_excluded_app(hwnd, processPath, defaultExcludedApps));
 }
 
@@ -307,7 +211,7 @@ void FancyZonesWindowUtils::SwitchToWindow(HWND window) noexcept
     }
 }
 
-void FancyZonesWindowUtils::SizeWindowToRect(HWND window, RECT rect) noexcept
+void FancyZonesWindowUtils::SizeWindowToRect(HWND window, RECT rect, BOOL snapZone) noexcept
 {
     WINDOWPLACEMENT placement{};
     ::GetWindowPlacement(window, &placement);
@@ -319,25 +223,29 @@ void FancyZonesWindowUtils::SizeWindowToRect(HWND window, RECT rect) noexcept
         ::GetWindowPlacement(window, &placement);
     }
 
-    if (!IsWindowVisible(window))
+    BOOL maximizeLater = false;
+    if (IsWindowVisible(window))
     {
-        placement.showCmd = SW_HIDE;
-    }
-    else
-    {
+        // If is not snap zone then need keep maximize state (move to active monitor)
+        if (!snapZone && placement.showCmd == SW_SHOWMAXIMIZED)
+        {
+            maximizeLater = true;
+        }
+
         // Do not restore minimized windows. We change their placement though so they restore to the correct zone.
         if ((placement.showCmd != SW_SHOWMINIMIZED) &&
             (placement.showCmd != SW_MINIMIZE))
         {
-            placement.showCmd = SW_RESTORE;
-        }
+            // Remove maximized show command to make sure window is moved to the correct zone.
+            if (placement.showCmd == SW_SHOWMAXIMIZED)
+                placement.flags &= ~WPF_RESTORETOMAXIMIZED;
 
-        // Remove maximized show command to make sure window is moved to the correct zone.
-        if (placement.showCmd == SW_SHOWMAXIMIZED)
-        {
             placement.showCmd = SW_RESTORE;
-            placement.flags &= ~WPF_RESTORETOMAXIMIZED;
         }
+    }
+    else
+    {
+        placement.showCmd = SW_HIDE;
     }
 
     ScreenToWorkAreaCoords(window, rect);
@@ -349,6 +257,12 @@ void FancyZonesWindowUtils::SizeWindowToRect(HWND window, RECT rect) noexcept
     if (!result)
     {
         Logger::error(L"SetWindowPlacement failed, {}", get_last_error_or_default(GetLastError()));
+    }
+
+    // make sure window is moved to the correct monitor before maximize.
+    if (maximizeLater)
+    {
+        placement.showCmd = SW_SHOWMAXIMIZED;
     }
 
     // Do it again, allowing Windows to resize the window and set correct scaling

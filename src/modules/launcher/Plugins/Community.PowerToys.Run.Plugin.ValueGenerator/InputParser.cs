@@ -5,9 +5,11 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+
 using Community.PowerToys.Run.Plugin.ValueGenerator.Base64;
 using Community.PowerToys.Run.Plugin.ValueGenerator.GUID;
 using Community.PowerToys.Run.Plugin.ValueGenerator.Hashing;
+using Community.PowerToys.Run.Plugin.ValueGenerator.Uri;
 using Wox.Plugin;
 using Wox.Plugin.Logger;
 
@@ -26,7 +28,7 @@ namespace Community.PowerToys.Run.Plugin.ValueGenerator
 
             string command = query.Terms[0];
 
-            if (command.ToLower(null) == "md5")
+            if (command.Equals("md5", StringComparison.OrdinalIgnoreCase))
             {
                 int commandIndex = query.RawUserQuery.IndexOf(command, StringComparison.InvariantCultureIgnoreCase);
                 string content = query.RawUserQuery.Substring(commandIndex + command.Length).Trim();
@@ -63,7 +65,7 @@ namespace Community.PowerToys.Run.Plugin.ValueGenerator
                         algorithmName = HashAlgorithmName.SHA512;
                         break;
                     default:
-                        throw new ArgumentException("Unknown SHA variant. Supported variants: SHA1, SHA256, SHA384, SHA512");
+                        throw new FormatException("Unknown SHA variant. Supported variants: SHA1, SHA256, SHA384, SHA512");
                 }
 
                 if (content == string.Empty)
@@ -92,7 +94,7 @@ namespace Community.PowerToys.Run.Plugin.ValueGenerator
 
                     if (!int.TryParse(versionQuery, null, out version))
                     {
-                        throw new ArgumentException("Could not determine requested GUID version");
+                        throw new FormatException("Could not determine requested GUID version. Supported versions are 1, 3, 4 and 5");
                     }
                 }
 
@@ -102,7 +104,7 @@ namespace Community.PowerToys.Run.Plugin.ValueGenerator
 
                     if (sParameters.Length != 2)
                     {
-                        throw new ArgumentException("GUID versions 3 and 5 require 2 parameters - a namespace GUID and a name");
+                        throw new ArgumentException($"GUID version {version} require 2 parameters - a namespace GUID and a name.\nExample: uuidv{version} ns:<DNS, URL, OID, or X500> <your input>");
                     }
 
                     string namespaceParameter = sParameters[0];
@@ -115,17 +117,80 @@ namespace Community.PowerToys.Run.Plugin.ValueGenerator
                     request = new GUIDRequest(version);
                 }
             }
-            else if (command.ToLower(null) == "base64")
+            else if (command.Equals("base64", StringComparison.OrdinalIgnoreCase))
             {
                 int commandIndex = query.RawUserQuery.IndexOf(command, StringComparison.InvariantCultureIgnoreCase);
                 string content = query.RawUserQuery.Substring(commandIndex + command.Length).Trim();
                 request = new Base64Request(Encoding.UTF8.GetBytes(content));
             }
-            else if (command.ToLower(null) == "base64d")
+            else if (command.Equals("base64d", StringComparison.OrdinalIgnoreCase))
             {
                 int commandIndex = query.RawUserQuery.IndexOf(command, StringComparison.InvariantCultureIgnoreCase);
                 string content = query.RawUserQuery.Substring(commandIndex + command.Length).Trim();
                 request = new Base64DecodeRequest(content);
+            }
+            else if (command.StartsWith("esc:", StringComparison.OrdinalIgnoreCase))
+            {
+                // Escape things
+                if (command.Equals("esc:data", StringComparison.OrdinalIgnoreCase))
+                {
+                    int commandIndex = query.RawUserQuery.IndexOf(command, StringComparison.InvariantCultureIgnoreCase);
+                    string content = query.RawUserQuery.Substring(commandIndex + command.Length).Trim();
+                    request = new DataEscapeRequest(content);
+                }
+                else if (command.Equals("esc:hex", StringComparison.OrdinalIgnoreCase))
+                {
+                    int commandIndex = query.RawUserQuery.IndexOf(command, StringComparison.InvariantCultureIgnoreCase);
+                    string content = query.RawUserQuery.Substring(commandIndex + command.Length).Trim();
+
+                    // This is only for single chars
+                    if (content.Length > 1)
+                    {
+                        throw new ArgumentException($"Invalid Query: {query.RawUserQuery} (To many characters.)");
+                    }
+                    else if (content.Length == 0)
+                    {
+                        throw new FormatException($"Invalid Query: {query.RawUserQuery}");
+                    }
+
+                    request = new HexEscapeRequest(content);
+                }
+                else
+                {
+                    throw new FormatException($"Invalid Query: {query.RawUserQuery}");
+                }
+            }
+            else if (command.StartsWith("uesc:", StringComparison.OrdinalIgnoreCase))
+            {
+                // Unescape things
+                if (command.Equals("uesc:data", StringComparison.OrdinalIgnoreCase))
+                {
+                    int commandIndex = query.RawUserQuery.IndexOf(command, StringComparison.InvariantCultureIgnoreCase);
+                    string content = query.RawUserQuery.Substring(commandIndex + command.Length).Trim();
+                    request = new DataUnescapeRequest(content);
+                }
+                else if (command.Equals("uesc:hex", StringComparison.OrdinalIgnoreCase))
+                {
+                    int commandIndex = query.RawUserQuery.IndexOf(command, StringComparison.InvariantCultureIgnoreCase);
+                    string content = query.RawUserQuery.Substring(commandIndex + command.Length).Trim();
+                    request = new HexUnescapeRequest(content);
+                }
+                else
+                {
+                    throw new FormatException($"Invalid Query: {query.RawUserQuery}");
+                }
+            }
+            else if (command.Equals("url", StringComparison.OrdinalIgnoreCase))
+            {
+                int commandIndex = query.RawUserQuery.IndexOf(command, StringComparison.InvariantCultureIgnoreCase);
+                string content = query.RawUserQuery.Substring(commandIndex + command.Length).Trim();
+                request = new UrlEncodeRequest(content);
+            }
+            else if (command.Equals("urld", StringComparison.OrdinalIgnoreCase))
+            {
+                int commandIndex = query.RawUserQuery.IndexOf(command, StringComparison.InvariantCultureIgnoreCase);
+                string content = query.RawUserQuery.Substring(commandIndex + command.Length).Trim();
+                request = new UrlDecodeRequest(content);
             }
             else
             {

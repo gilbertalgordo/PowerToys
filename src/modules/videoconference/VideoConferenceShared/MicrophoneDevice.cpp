@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "MicrophoneDevice.h"
 
 #include "Logging.h"
@@ -53,11 +54,6 @@ bool MicrophoneDevice::muted() const noexcept
     return muted;
 }
 
-void MicrophoneDevice::toggle_muted() noexcept
-{
-    set_muted(!muted());
-}
-
 std::wstring_view MicrophoneDevice::id() const noexcept
 {
     return _id ? _id.get() : FALLBACK_ID;
@@ -70,6 +66,10 @@ std::wstring_view MicrophoneDevice::name() const noexcept
 
 void MicrophoneDevice::set_mute_changed_callback(mute_changed_cb_t callback) noexcept
 {
+    if (_notifier)
+    {
+        _endpoint->UnregisterControlChangeNotify(_notifier.get());
+    }
     _mute_changed_callback = std::move(callback);
     _notifier = winrt::make<VolumeNotifier>(this);
 

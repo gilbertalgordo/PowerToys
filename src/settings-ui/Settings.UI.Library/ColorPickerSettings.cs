@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
 using ManagedCommon;
 using Microsoft.PowerToys.Settings.UI.Library.Interfaces;
 
@@ -26,18 +27,17 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             Name = ModuleName;
         }
 
+        private static readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+        };
+
         public virtual void Save(ISettingsUtils settingsUtils)
         {
             // Save settings to file
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-            };
+            var options = _serializerOptions;
 
-            if (settingsUtils == null)
-            {
-                throw new ArgumentNullException(nameof(settingsUtils));
-            }
+            ArgumentNullException.ThrowIfNull(settingsUtils);
 
             settingsUtils.SaveSettings(JsonSerializer.Serialize(this, options), ModuleName);
         }

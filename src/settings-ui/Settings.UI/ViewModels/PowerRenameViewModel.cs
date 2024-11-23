@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+
 using global::PowerToys.GPOWrapper;
 using ManagedCommon;
 using Microsoft.PowerToys.Settings.UI.Library;
@@ -33,10 +34,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
             _settingsConfigFileFolder = configFileSubfolder;
             _settingsUtils = settingsUtils ?? throw new ArgumentNullException(nameof(settingsUtils));
 
-            if (settingsRepository == null)
-            {
-                throw new ArgumentNullException(nameof(settingsRepository));
-            }
+            ArgumentNullException.ThrowIfNull(settingsRepository);
 
             GeneralSettingsConfig = settingsRepository.SettingsConfig;
 
@@ -59,7 +57,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
                 _settingsUtils.SaveSettings(localSettings.ToJsonString(), GetSettingsSubPath(), "power-rename-settings.json");
             }
 
-            // set the callback functions value to hangle outgoing IPC message.
+            // set the callback functions value to handle outgoing IPC message.
             SendConfigMSG = ipcMSGCallBackFunc;
 
             _powerRenameEnabledOnContextMenu = Settings.Properties.ShowIcon.Value;

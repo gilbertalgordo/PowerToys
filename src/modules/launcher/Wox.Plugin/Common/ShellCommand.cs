@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
+
 using Wox.Plugin.Common.Win32;
 
 namespace Wox.Plugin.Common
@@ -18,10 +19,7 @@ namespace Wox.Plugin.Common
 
         public static Process RunAsDifferentUser(ProcessStartInfo processStartInfo)
         {
-            if (processStartInfo == null)
-            {
-                throw new ArgumentNullException(nameof(processStartInfo));
-            }
+            ArgumentNullException.ThrowIfNull(processStartInfo);
 
             processStartInfo.Verb = "RunAsUser";
             var process = Process.Start(processStartInfo);

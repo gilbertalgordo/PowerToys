@@ -11,6 +11,8 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
+using MouseWithoutBorders.Core;
+
 // <summary>
 //     TCP Server implementation.
 // </summary>
@@ -33,7 +35,7 @@ namespace MouseWithoutBorders.Class
 
         internal TcpServer(int port, ParameterizedThreadStart job)
         {
-            Common.Log($"TCP listening on port: {port}");
+            Logger.Log($"TCP listening on port: {port}");
             Name = port.ToString(CultureInfo.CurrentCulture);
             server = TcpListener.Create(port);
             StartServer(job);
@@ -79,7 +81,7 @@ namespace MouseWithoutBorders.Class
                     }
                     else
                     {
-                        Common.TelemetryLogTrace($"Error listening on: {server.LocalEndpoint}: {e.ErrorCode}/{e.Message}", SeverityLevel.Error);
+                        Logger.TelemetryLogTrace($"Error listening on: {server.LocalEndpoint}: {e.ErrorCode}/{e.Message}", SeverityLevel.Error);
                         throw;
                     }
                 }
@@ -99,11 +101,12 @@ namespace MouseWithoutBorders.Class
             }
             catch (Exception e)
             {
-                Common.Log(e);
+                Logger.Log(e);
             }
         }
 
         private static bool logged;
+        internal static readonly string[] Separator = new[] { " " };
 
         private void LogError(string log)
         {
@@ -146,7 +149,7 @@ namespace MouseWithoutBorders.Class
                                 try
                                 {
                                     // Assuming the format of netstat's output is fixed.
-                                    pid = int.Parse(portLogLine.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries).Last(), CultureInfo.CurrentCulture);
+                                    pid = int.Parse(portLogLine.Split(Separator, StringSplitOptions.RemoveEmptyEntries).Last(), CultureInfo.CurrentCulture);
                                     process = Process.GetProcessById(pid);
                                 }
                                 catch (Exception)

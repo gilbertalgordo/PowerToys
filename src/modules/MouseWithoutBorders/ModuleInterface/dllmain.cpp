@@ -22,13 +22,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID /*lpRese
     {
     case DLL_PROCESS_ATTACH:
         g_hInst_MouseWithoutBorders = hModule;
-        Trace::RegisterProvider();
+        Trace::MouseWithoutBorders::RegisterProvider();
         break;
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
         break;
     case DLL_PROCESS_DETACH:
-        Trace::UnregisterProvider();
+        Trace::MouseWithoutBorders::UnregisterProvider();
         break;
     }
     return TRUE;
@@ -123,9 +123,7 @@ class MouseWithoutBorders : public PowertoyModuleIface
 private:
     bool m_enabled = false;
     bool run_in_service_mode = false;
-    HANDLE send_telemetry_event;
-    HANDLE m_hInvokeEvent;
-    PROCESS_INFORMATION p_info;
+    PROCESS_INFORMATION p_info = {};
 
     bool is_enabled_by_default() const override
     {
@@ -200,7 +198,7 @@ private:
             Logger::error("Failed to delete MWB service");
             return;
         }
-    
+
         Trace::MouseWithoutBorders::ToggleServiceRegistration(false);
     }
 
@@ -244,11 +242,10 @@ private:
         }
 
         // Pass local app data of the current user to the service
-        PWSTR cLocalAppPath;
+        wil::unique_cotaskmem_string cLocalAppPath;
         winrt::check_hresult(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &cLocalAppPath));
-        CoTaskMemFree(cLocalAppPath);
 
-        std::wstring localAppPath{ cLocalAppPath };
+        std::wstring localAppPath{ cLocalAppPath.get() };
         std::wstring binaryWithArgsPath = L"\"";
         binaryWithArgsPath += servicePath;
         binaryWithArgsPath += L"\" ";
@@ -261,7 +258,8 @@ private:
             std::wstring_view existingServicePath{ pServiceConfig->lpBinaryPathName };
             alreadyRegistered = true;
             isServicePathCorrect = (existingServicePath == binaryWithArgsPath);
-            if (isServicePathCorrect) {
+            if (isServicePathCorrect)
+            {
                 Logger::warn(L"The service path is not correct. Current: {} Expected: {}", existingServicePath, binaryWithArgsPath);
             }
 
@@ -293,18 +291,19 @@ private:
 
         if (alreadyRegistered)
         {
-            if (!isServicePathCorrect) {
+            if (!isServicePathCorrect)
+            {
                 if (!ChangeServiceConfigW(schService,
-                    SERVICE_NO_CHANGE,
-                    SERVICE_NO_CHANGE,
-                    SERVICE_NO_CHANGE,
-                    binaryWithArgsPath.c_str(),
-                    nullptr,
-                    nullptr,
-                    nullptr,
-                    nullptr,
-                    nullptr,
-                    nullptr))
+                                          SERVICE_NO_CHANGE,
+                                          SERVICE_NO_CHANGE,
+                                          SERVICE_NO_CHANGE,
+                                          binaryWithArgsPath.c_str(),
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr))
                 {
                     Logger::error(L"Failed to update the service's path. ERROR: {}", GetLastError());
                 }
@@ -520,8 +519,6 @@ public:
     virtual void enable()
     {
         Trace::MouseWithoutBorders::Enable(true);
-        ResetEvent(send_telemetry_event);
-        ResetEvent(m_hInvokeEvent);
 
         launch_process();
 
@@ -534,8 +531,6 @@ public:
         {
             Trace::MouseWithoutBorders::Enable(false);
             Logger::trace(L"Disabling MouseWithoutBorders...");
-            ResetEvent(send_telemetry_event);
-            ResetEvent(m_hInvokeEvent);
 
             Logger::trace(L"Signaled exit event for PowerToys MouseWithoutBorders.");
             TerminateProcess(p_info.hProcess, 1);

@@ -5,6 +5,7 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
 using Microsoft.PowerToys.Settings.UI.Library.Interfaces;
 
 namespace Microsoft.PowerToys.Settings.UI.Library
@@ -13,6 +14,11 @@ namespace Microsoft.PowerToys.Settings.UI.Library
     {
         public const string ModuleName = "Peek";
         public const string ModuleVersion = "0.0.1";
+
+        private static readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+        };
 
         [JsonPropertyName("properties")]
         public PeekProperties Properties { get; set; }
@@ -37,15 +43,9 @@ namespace Microsoft.PowerToys.Settings.UI.Library
         public virtual void Save(ISettingsUtils settingsUtils)
         {
             // Save settings to file
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-            };
+            var options = _serializerOptions;
 
-            if (settingsUtils == null)
-            {
-                throw new ArgumentNullException(nameof(settingsUtils));
-            }
+            ArgumentNullException.ThrowIfNull(settingsUtils);
 
             settingsUtils.SaveSettings(JsonSerializer.Serialize(this, options), ModuleName);
         }

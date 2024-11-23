@@ -6,6 +6,7 @@ using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+
 using DrawingImaging = System.Drawing.Imaging;
 using MediaImaging = System.Windows.Media.Imaging;
 
@@ -25,10 +26,7 @@ namespace PowerLauncher.Helper
 
         public static void SetDragImage(this IDataObject dataObject, IntPtr hBitmap, int width, int height)
         {
-            if (dataObject == null)
-            {
-                throw new ArgumentNullException(nameof(dataObject));
-            }
+            ArgumentNullException.ThrowIfNull(dataObject);
 
             IDragSourceHelper dragDropHelper = (IDragSourceHelper)new DragDropHelper();
             ShDragImage dragImage = new ShDragImage

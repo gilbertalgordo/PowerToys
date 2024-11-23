@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+
 using Wox.Plugin.Logger;
 
 namespace Wox.Infrastructure.Storage
@@ -44,7 +45,7 @@ namespace Wox.Infrastructure.Storage
 
         public bool Any()
         {
-            return _items.Any();
+            return !_items.IsEmpty;
         }
 
         public void Add(T insertedItem)

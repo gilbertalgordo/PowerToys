@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+
 using Microsoft.PowerToys.Run.Plugin.TimeDate.Components;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -34,6 +35,11 @@ namespace Microsoft.PowerToys.Run.Plugin.TimeDate.UnitTests
         [DataRow("5:05:10 PM", true, "T", "5:05:10 PM")]
         [DataRow("10456", false, "", "")]
         [DataRow("u10456", true, "", "")] // Value is UTC and can be different based on system
+        [DataRow("u-10456", true, "", "")] // Value is UTC and can be different based on system
+        [DataRow("u+10456", true, "", "")] // Value is UTC and can be different based on system
+        [DataRow("ums10456", true, "", "")] // Value is UTC and can be different based on system
+        [DataRow("ums-10456", true, "", "")] // Value is UTC and can be different based on system
+        [DataRow("ums+10456", true, "", "")] // Value is UTC and can be different based on system
         [DataRow("ft10456", true, "", "")] // Value is UTC and can be different based on system
         public void ConvertStringToDateTime(string typedString, bool expectedBool, string stringType, string expectedString)
         {

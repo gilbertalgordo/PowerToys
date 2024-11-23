@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text.Json;
+
 using Microsoft.PowerToys.Settings.UI.Library.Telemetry.Events;
 using Microsoft.PowerToys.Telemetry;
 using Microsoft.VariantAssignment.Client;
@@ -76,9 +77,10 @@ namespace AllExperiments
 
                     if (jsonDictionary != null)
                     {
-                        if (!jsonDictionary.ContainsKey("dataversion"))
+                        if (!jsonDictionary.TryGetValue("dataversion", out object? value))
                         {
-                            jsonDictionary.Add("dataversion", dataVersion);
+                            value = dataVersion;
+                            jsonDictionary.Add("dataversion", value);
                         }
 
                         if (!jsonDictionary.ContainsKey("variantassignment"))
@@ -87,7 +89,7 @@ namespace AllExperiments
                         }
                         else
                         {
-                            var jsonDataVersion = jsonDictionary["dataversion"].ToString();
+                            var jsonDataVersion = value.ToString();
                             if (jsonDataVersion != null && int.Parse(jsonDataVersion, CultureInfo.InvariantCulture) < dataVersion)
                             {
                                 jsonDictionary["dataversion"] = dataVersion;
@@ -116,9 +118,9 @@ namespace AllExperiments
 
                 if (jsonDictionary != null)
                 {
-                    if (jsonDictionary.ContainsKey("variantassignment"))
+                    if (jsonDictionary.TryGetValue("variantassignment", out object? value))
                     {
-                        if (jsonDictionary["variantassignment"].ToString() == "alternate" && AssignmentUnit != string.Empty)
+                        if (value.ToString() == "alternate" && AssignmentUnit != string.Empty)
                         {
                             IsExperiment = true;
                         }
@@ -144,7 +146,7 @@ namespace AllExperiments
 
         private string? AssignmentUnit { get; set; }
 
-        private IVariantAssignmentRequest GetVariantAssignmentRequest()
+        private VariantAssignmentRequest GetVariantAssignmentRequest()
         {
             var jsonFilePath = CreateFilePath();
             try

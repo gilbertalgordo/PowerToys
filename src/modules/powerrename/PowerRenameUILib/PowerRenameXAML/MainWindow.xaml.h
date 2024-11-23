@@ -5,6 +5,8 @@
 #include "winrt/Windows.UI.Xaml.Interop.h"
 #include "winrt/Windows.UI.Xaml.Controls.Primitives.h"
 
+#include <common/Telemetry/EtwTrace/EtwTrace.h>
+
 #include "MainWindow.g.h"
 #include "PatternSnippet.h"
 #include "ExplorerItem.h"
@@ -85,6 +87,7 @@ namespace winrt::PowerRenameUI::implementation
         winrt::Windows::Foundation::Collections::IObservableVector<PowerRenameUI::PatternSnippet> SearchRegExShortcuts() { return m_searchRegExShortcuts; }
         winrt::Windows::Foundation::Collections::IObservableVector<PowerRenameUI::PatternSnippet> DateTimeShortcuts() { return m_dateTimeShortcuts; }
         winrt::Windows::Foundation::Collections::IObservableVector<PowerRenameUI::PatternSnippet> CounterShortcuts() { return m_CounterShortcuts; }
+        winrt::Windows::Foundation::Collections::IObservableVector<PowerRenameUI::PatternSnippet> RandomizerShortcuts() { return m_RandomizerShortcuts; }
 
         hstring OriginalCount();
         void OriginalCount(hstring value);
@@ -107,6 +110,7 @@ namespace winrt::PowerRenameUI::implementation
         winrt::Windows::Foundation::Collections::IObservableVector<PowerRenameUI::PatternSnippet> m_searchRegExShortcuts;
         winrt::Windows::Foundation::Collections::IObservableVector<PowerRenameUI::PatternSnippet> m_dateTimeShortcuts;
         winrt::Windows::Foundation::Collections::IObservableVector<PowerRenameUI::PatternSnippet> m_CounterShortcuts;
+        winrt::Windows::Foundation::Collections::IObservableVector<PowerRenameUI::PatternSnippet> m_RandomizerShortcuts;
 
         // Used by PowerRenameManagerEvents
         HRESULT OnRename(_In_ IPowerRenameItem* renameItem);
@@ -141,6 +145,8 @@ namespace winrt::PowerRenameUI::implementation
         void SetCheckboxesFromFlags(DWORD flags);
         void UpdateCounts();
 
+        Shared::Trace::ETWTrace m_etwTrace{};
+
         HWND m_window{};
 
         bool m_disableCountUpdate = false;
@@ -153,6 +159,8 @@ namespace winrt::PowerRenameUI::implementation
         UINT m_selectedCount = 0;
         UINT m_renamingCount = 0;
         winrt::event<Microsoft::UI::Xaml::Data::PropertyChangedEventHandler> m_propertyChanged;
+        std::optional<std::pair<int,int>> m_updatedWindowSize;
+
 
         bool m_flagValidationInProgress = false;
 

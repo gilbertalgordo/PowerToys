@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+
 using Microsoft.PowerToys.Run.Plugin.Registry.Classes;
 using Microsoft.PowerToys.Run.Plugin.Registry.Constants;
 using Microsoft.PowerToys.Run.Plugin.Registry.Properties;
@@ -152,7 +153,7 @@ namespace Microsoft.PowerToys.Run.Plugin.Registry.Helper
         /// <param name="parentKey">The parent-key, also the root to start the search</param>
         /// <param name="searchSubKey">The sub-key to find</param>
         /// <returns>A list with all found registry sub-keys</returns>
-        private static ICollection<RegistryEntry> FindSubKey(in RegistryKey parentKey, in string searchSubKey)
+        private static Collection<RegistryEntry> FindSubKey(in RegistryKey parentKey, in string searchSubKey)
         {
             var list = new Collection<RegistryEntry>();
 
@@ -204,7 +205,7 @@ namespace Microsoft.PowerToys.Run.Plugin.Registry.Helper
         /// <param name="parentKey">The registry parent-key</param>
         /// <param name="maxCount">(optional) The maximum count of the results</param>
         /// <returns>A list with all found registry sub-keys</returns>
-        private static ICollection<RegistryEntry> GetAllSubKeys(in RegistryKey parentKey, in int maxCount = 50)
+        private static Collection<RegistryEntry> GetAllSubKeys(in RegistryKey parentKey, in int maxCount = 50)
         {
             var list = new Collection<RegistryEntry>();
 

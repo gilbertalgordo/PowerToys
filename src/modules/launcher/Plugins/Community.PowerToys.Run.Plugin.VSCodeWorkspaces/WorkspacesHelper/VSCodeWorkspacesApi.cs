@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+
 using Community.PowerToys.Run.Plugin.VSCodeWorkspaces.VSCodeHelper;
 using Microsoft.Data.Sqlite;
 using Wox.Plugin.Logger;
@@ -19,37 +20,68 @@ namespace Community.PowerToys.Run.Plugin.VSCodeWorkspaces.WorkspacesHelper
         {
         }
 
-        private VSCodeWorkspace ParseVSCodeUri(string uri, VSCodeInstance vscodeInstance, bool isWorkspace = false)
+        private VSCodeWorkspace ParseVSCodeUriAndAuthority(string uri, string authority, VSCodeInstance vscodeInstance, bool isWorkspace = false)
         {
-            if (uri != null && uri is string)
+            if (uri is null)
             {
-                string unescapeUri = Uri.UnescapeDataString(uri);
-                var typeWorkspace = WorkspacesHelper.ParseVSCodeUri.GetWorkspaceEnvironment(unescapeUri);
-                if (typeWorkspace.WorkspaceEnvironment.HasValue)
-                {
-                    var folderName = Path.GetFileName(unescapeUri);
-
-                    // Check we haven't returned '' if we have a path like C:\
-                    if (string.IsNullOrEmpty(folderName))
-                    {
-                        DirectoryInfo dirInfo = new DirectoryInfo(unescapeUri);
-                        folderName = dirInfo.Name.TrimEnd(':');
-                    }
-
-                    return new VSCodeWorkspace()
-                    {
-                        Path = uri,
-                        WorkspaceType = isWorkspace ? WorkspaceType.WorkspaceFile : WorkspaceType.ProjectFolder,
-                        RelativePath = typeWorkspace.Path,
-                        FolderName = folderName,
-                        ExtraInfo = typeWorkspace.MachineName,
-                        WorkspaceEnvironment = typeWorkspace.WorkspaceEnvironment.Value,
-                        VSCodeInstance = vscodeInstance,
-                    };
-                }
+                return null;
             }
 
-            return null;
+            var rfc3986Uri = Rfc3986Uri.Parse(Uri.UnescapeDataString(uri));
+            if (rfc3986Uri is null)
+            {
+                return null;
+            }
+
+            var (workspaceEnv, machineName) = ParseVSCodeAuthority.GetWorkspaceEnvironment(authority ?? rfc3986Uri.Authority);
+            if (workspaceEnv is null)
+            {
+                return null;
+            }
+
+            var path = rfc3986Uri.Path;
+
+            // Remove preceding '/' from local (Windows) path
+            if (workspaceEnv == WorkspaceEnvironment.Local)
+            {
+                path = path[1..];
+            }
+
+            if (!DoesPathExist(path, workspaceEnv.Value))
+            {
+                return null;
+            }
+
+            var folderName = Path.GetFileName(path);
+
+            // Check we haven't returned '' if we have a path like C:\
+            if (string.IsNullOrEmpty(folderName))
+            {
+                DirectoryInfo dirInfo = new(path);
+                folderName = dirInfo.Name.TrimEnd(':');
+            }
+
+            return new VSCodeWorkspace()
+            {
+                Path = uri,
+                WorkspaceType = isWorkspace ? WorkspaceType.WorkspaceFile : WorkspaceType.ProjectFolder,
+                RelativePath = path,
+                FolderName = folderName,
+                ExtraInfo = machineName,
+                WorkspaceEnvironment = workspaceEnv ?? default,
+                VSCodeInstance = vscodeInstance,
+            };
+        }
+
+        private bool DoesPathExist(string path, WorkspaceEnvironment workspaceEnv)
+        {
+            if (workspaceEnv == WorkspaceEnvironment.Local)
+            {
+                return Directory.Exists(path) || File.Exists(path);
+            }
+
+            // If the workspace environment is not Local or WSL, assume the path exists
+            return true;
         }
 
         public List<VSCodeWorkspace> Workspaces
@@ -100,7 +132,7 @@ namespace Community.PowerToys.Run.Plugin.VSCodeWorkspaces.WorkspacesHelper
                     {
                         foreach (var workspaceUri in vscodeStorageFile.OpenedPathsList.Workspaces3)
                         {
-                            var workspace = ParseVSCodeUri(workspaceUri, vscodeInstance);
+                            var workspace = ParseVSCodeUriAndAuthority(workspaceUri, null, vscodeInstance);
                             if (workspace != null)
                             {
                                 storageFileResults.Add(workspace);
@@ -121,7 +153,7 @@ namespace Community.PowerToys.Run.Plugin.VSCodeWorkspaces.WorkspacesHelper
                                 uri = entry.Workspace.ConfigPath;
                             }
 
-                            var workspace = ParseVSCodeUri(uri, vscodeInstance, isWorkspaceFile);
+                            var workspace = ParseVSCodeUriAndAuthority(uri, entry.RemoteAuthority, vscodeInstance, isWorkspaceFile);
                             if (workspace != null)
                             {
                                 storageFileResults.Add(workspace);
@@ -174,7 +206,7 @@ namespace Community.PowerToys.Run.Plugin.VSCodeWorkspaces.WorkspacesHelper
                                         uri = entry.Workspace.ConfigPath;
                                     }
 
-                                    var workspace = ParseVSCodeUri(uri, vscodeInstance, isWorkspaceFile);
+                                    var workspace = ParseVSCodeUriAndAuthority(uri, entry.RemoteAuthority, vscodeInstance, isWorkspaceFile);
                                     if (workspace != null)
                                     {
                                         dbFileResults.Add(workspace);

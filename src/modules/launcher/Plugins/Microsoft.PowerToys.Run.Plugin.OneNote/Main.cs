@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+
 using LazyCache;
 using ManagedCommon;
 using Microsoft.PowerToys.Run.Plugin.OneNote.Properties;
@@ -58,6 +59,11 @@ namespace Microsoft.PowerToys.Run.Plugin.OneNote
         /// Gets the localized description.
         /// </summary>
         public string Description => Resources.PluginDescription;
+
+        /// <summary>
+        /// Gets the plugin ID for validation
+        /// </summary>
+        public static string PluginID => "0778F0C264114FEC8A3DF59447CF0A74";
 
         /// <summary>
         /// Initialize the plugin with the given <see cref="PluginInitContext"/>

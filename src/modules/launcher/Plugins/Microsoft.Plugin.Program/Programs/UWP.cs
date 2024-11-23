@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Xml.Linq;
+
 using Microsoft.Plugin.Program.Logger;
 using Wox.Plugin.Common.Win32;
 using Wox.Plugin.Logger;
@@ -47,10 +48,7 @@ namespace Microsoft.Plugin.Program.Programs
 
         public UWP(IPackage package)
         {
-            if (package == null)
-            {
-                throw new ArgumentNullException(nameof(package));
-            }
+            ArgumentNullException.ThrowIfNull(package);
 
             Name = package.Name;
             FullName = package.FullName;

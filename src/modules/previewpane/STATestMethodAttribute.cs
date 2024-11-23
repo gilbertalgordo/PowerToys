@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 // Used for STA tests in PreviewPane
@@ -24,10 +25,7 @@ namespace Microsoft.PowerToys.STATestExtension
 
         public override TestResult[] Execute(ITestMethod testMethod)
         {
-            if (testMethod == null)
-            {
-                throw new ArgumentNullException(nameof(testMethod));
-            }
+            ArgumentNullException.ThrowIfNull(testMethod);
 
             if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
             {
